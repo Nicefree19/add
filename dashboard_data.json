@@ -1,0 +1,344 @@
+{
+  "accounts": {
+    "kakao_bank": {
+      "name": "카카오뱅크",
+      "balance": 14494022,
+      "account_number": "3333-12-3456789"
+    },
+    "safe_box": {
+      "name": "세이프박스",
+      "balance": 2000000,
+      "description": "비상 준비금"
+    }
+  },
+  "transactions": [
+    {
+      "id": 1,
+      "date": "2025-11-11",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "11월 정기 회비 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14494022
+    },
+    {
+      "id": 2,
+      "date": "2025-11-05",
+      "type": "expense",
+      "category": "식사",
+      "amount": 350000,
+      "description": "11월 정기 모임 식사비",
+      "bank": "kakao_bank",
+      "balance_after": 13994022
+    },
+    {
+      "id": 3,
+      "date": "2025-10-15",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "10월 정기 회비 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14344022
+    },
+    {
+      "id": 4,
+      "date": "2025-10-10",
+      "type": "expense",
+      "category": "식사",
+      "amount": 420000,
+      "description": "10월 정기 모임 식사비",
+      "bank": "kakao_bank",
+      "balance_after": 13844022
+    },
+    {
+      "id": 5,
+      "date": "2025-10-01",
+      "type": "income",
+      "category": "이자",
+      "amount": 12850,
+      "description": "3분기 이자 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14264022
+    },
+    {
+      "id": 6,
+      "date": "2025-09-20",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "9월 정기 회비 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14251172
+    },
+    {
+      "id": 7,
+      "date": "2025-09-12",
+      "type": "expense",
+      "category": "행사",
+      "amount": 850000,
+      "description": "추석 선물 구매",
+      "bank": "kakao_bank",
+      "balance_after": 13751172
+    },
+    {
+      "id": 8,
+      "date": "2025-08-25",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "8월 정기 회비 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14601172
+    },
+    {
+      "id": 9,
+      "date": "2025-08-15",
+      "type": "expense",
+      "category": "식사",
+      "amount": 380000,
+      "description": "8월 정기 모임 식사비",
+      "bank": "kakao_bank",
+      "balance_after": 14101172
+    },
+    {
+      "id": 10,
+      "date": "2025-07-28",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "7월 정기 회비 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14481172
+    },
+    {
+      "id": 11,
+      "date": "2025-07-20",
+      "type": "income",
+      "category": "이자",
+      "amount": 11550,
+      "description": "2분기 이자 입금",
+      "bank": "kakao_bank",
+      "balance_after": 13981172
+    },
+    {
+      "id": 12,
+      "date": "2025-07-10",
+      "type": "expense",
+      "category": "식사",
+      "amount": 390000,
+      "description": "7월 정기 모임 식사비",
+      "bank": "kakao_bank",
+      "balance_after": 13969622
+    },
+    {
+      "id": 13,
+      "date": "2025-06-25",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "6월 정기 회비 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14359622
+    },
+    {
+      "id": 14,
+      "date": "2025-06-15",
+      "type": "expense",
+      "category": "행사",
+      "amount": 720000,
+      "description": "여름 워크샵 비용",
+      "bank": "kakao_bank",
+      "balance_after": 13859622
+    },
+    {
+      "id": 15,
+      "date": "2025-05-30",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "5월 정기 회비 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14579622
+    },
+    {
+      "id": 16,
+      "date": "2025-05-18",
+      "type": "expense",
+      "category": "식사",
+      "amount": 410000,
+      "description": "5월 정기 모임 식사비",
+      "bank": "kakao_bank",
+      "balance_after": 14079622
+    },
+    {
+      "id": 17,
+      "date": "2025-04-28",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "4월 정기 회비 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14489622
+    },
+    {
+      "id": 18,
+      "date": "2025-04-15",
+      "type": "income",
+      "category": "이자",
+      "amount": 10220,
+      "description": "1분기 이자 입금",
+      "bank": "kakao_bank",
+      "balance_after": 13989622
+    },
+    {
+      "id": 19,
+      "date": "2025-04-10",
+      "type": "expense",
+      "category": "식사",
+      "amount": 365000,
+      "description": "4월 정기 모임 식사비",
+      "bank": "kakao_bank",
+      "balance_after": 13979402
+    },
+    {
+      "id": 20,
+      "date": "2025-03-25",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "3월 정기 회비 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14344402
+    },
+    {
+      "id": 21,
+      "date": "2025-03-15",
+      "type": "expense",
+      "category": "식사",
+      "amount": 395000,
+      "description": "3월 정기 모임 식사비",
+      "bank": "kakao_bank",
+      "balance_after": 13844402
+    },
+    {
+      "id": 22,
+      "date": "2025-02-28",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "2월 정기 회비 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14239402
+    },
+    {
+      "id": 23,
+      "date": "2025-02-10",
+      "type": "expense",
+      "category": "행사",
+      "amount": 980000,
+      "description": "설날 선물 구매",
+      "bank": "kakao_bank",
+      "balance_after": 13739402
+    },
+    {
+      "id": 24,
+      "date": "2025-01-30",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "1월 정기 회비 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14719402
+    },
+    {
+      "id": 25,
+      "date": "2025-01-15",
+      "type": "expense",
+      "category": "식사",
+      "amount": 425000,
+      "description": "1월 정기 모임 식사비",
+      "bank": "kakao_bank",
+      "balance_after": 14219402
+    },
+    {
+      "id": 26,
+      "date": "2025-01-05",
+      "type": "income",
+      "category": "이자",
+      "amount": 9850,
+      "description": "4분기 이자 입금",
+      "bank": "kakao_bank",
+      "balance_after": 14644402
+    },
+    {
+      "id": 27,
+      "date": "2024-12-28",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "12월 정기 회비 입금",
+      "bank": "shinhan_bank",
+      "balance_after": 14634552
+    },
+    {
+      "id": 28,
+      "date": "2024-12-15",
+      "type": "expense",
+      "category": "행사",
+      "amount": 1200000,
+      "description": "연말 파티 비용",
+      "bank": "shinhan_bank",
+      "balance_after": 14134552
+    },
+    {
+      "id": 29,
+      "date": "2024-11-25",
+      "type": "income",
+      "category": "회비",
+      "amount": 500000,
+      "description": "11월 정기 회비 입금",
+      "bank": "shinhan_bank",
+      "balance_after": 15334552
+    },
+    {
+      "id": 30,
+      "date": "2024-11-10",
+      "type": "expense",
+      "category": "식사",
+      "amount": 385000,
+      "description": "11월 정기 모임 식사비",
+      "bank": "shinhan_bank",
+      "balance_after": 14834552
+    },
+    {
+      "id": 31,
+      "date": "2024-10-01",
+      "type": "transfer",
+      "category": "세이프박스",
+      "amount": 2000000,
+      "description": "세이프박스로 비상금 이체",
+      "bank": "shinhan_bank",
+      "is_safe_box": true,
+      "balance_after": 15219552
+    },
+    {
+      "id": 32,
+      "date": "2024-09-30",
+      "type": "income",
+      "category": "특별회비",
+      "amount": 3000000,
+      "description": "특별 프로젝트 기금 조성",
+      "bank": "shinhan_bank",
+      "balance_after": 17219552
+    }
+  ],
+  "summary": {
+    "total_income": 19044470,
+    "total_expense": 7490000,
+    "total_interest": 44470,
+    "total_transactions": 32,
+    "safe_box_amount": 2000000
+  }
+}
