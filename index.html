@@ -135,13 +135,13 @@
     <main class="container mx-auto px-4 py-8">
         <!-- 계좌 잔액 카드 -->
         <section class="mb-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">💰 현재 잔액</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">💰 현재 잔액 <span class="text-sm text-gray-500 font-normal">(2025년 11월 11일 기준)</span></h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-yellow-500">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium">카카오뱅크</p>
-                            <p class="text-3xl font-bold text-gray-800 mt-2" id="kakao-balance">₩0</p>
+                            <p class="text-gray-600 text-sm font-medium">카카오뱅크 통장</p>
+                            <p class="text-2xl font-bold text-gray-800 mt-2" id="kakao-balance">₩0</p>
                             <p class="text-xs text-gray-500 mt-1" id="kakao-account">-</p>
                         </div>
                         <div class="stat-icon bg-yellow-100">
@@ -154,24 +154,38 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-600 text-sm font-medium">세이프박스</p>
-                            <p class="text-3xl font-bold text-gray-800 mt-2" id="safebox-balance">₩0</p>
+                            <p class="text-2xl font-bold text-green-600 mt-2" id="safebox-balance">₩0</p>
                             <p class="text-xs text-gray-500 mt-1" id="safebox-desc">-</p>
                         </div>
                         <div class="stat-icon bg-green-100">
                             <span>🔒</span>
                         </div>
                     </div>
+                    <a href="safebox.html" class="text-xs text-blue-600 hover:underline mt-2 inline-block">세이프박스 상세 보기 →</a>
                 </div>
 
-                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
+                <div class="card bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl shadow-lg p-6 border-l-4 border-purple-700">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium">총 자산</p>
-                            <p class="text-3xl font-bold text-purple-600 mt-2" id="total-balance">₩0</p>
-                            <p class="text-xs text-gray-500 mt-1">카카오뱅크 + 세이프박스</p>
+                            <p class="text-purple-100 text-sm font-medium">💎 총 운용액</p>
+                            <p class="text-3xl font-bold mt-2" id="total-balance">₩0</p>
+                            <p class="text-xs text-purple-200 mt-1">실제 사용 가능 금액</p>
                         </div>
-                        <div class="stat-icon bg-purple-100">
-                            <span>💎</span>
+                        <div class="stat-icon bg-purple-400">
+                            <span>💰</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-gray-400 opacity-75">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">신한은행 (폐쇄)</p>
+                            <p class="text-2xl font-bold text-gray-400 mt-2">₩0</p>
+                            <p class="text-xs text-gray-400 mt-1">2020년 12월 이후 미사용</p>
+                        </div>
+                        <div class="stat-icon bg-gray-100">
+                            <span>🏦</span>
                         </div>
                     </div>
                 </div>
@@ -402,16 +416,15 @@
 
         // 잔액 카드 업데이트
         function updateBalanceCards() {
-            const { accounts } = dashboardData;
+            const { accounts, summary } = dashboardData;
 
-            document.getElementById('kakao-balance').textContent = formatCurrency(accounts.kakao_bank.balance);
+            document.getElementById('kakao-balance').textContent = formatCurrency(summary.kakao_balance);
             document.getElementById('kakao-account').textContent = accounts.kakao_bank.account_number;
 
-            document.getElementById('safebox-balance').textContent = formatCurrency(accounts.safe_box.balance);
+            document.getElementById('safebox-balance').textContent = formatCurrency(summary.safebox_balance);
             document.getElementById('safebox-desc').textContent = accounts.safe_box.description;
 
-            const totalBalance = accounts.kakao_bank.balance + accounts.safe_box.balance;
-            document.getElementById('total-balance').textContent = formatCurrency(totalBalance);
+            document.getElementById('total-balance').textContent = formatCurrency(summary.total_balance);
         }
 
         // 통계 카드 업데이트
