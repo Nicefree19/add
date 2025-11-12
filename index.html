@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사우회 회비 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .card {
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 112, 192, 0.1);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #0070C0 0%, #0056a3 100%);
+        }
+
+        .income-text {
+            color: #10b981;
+        }
+
+        .expense-text {
+            color: #ef4444;
+        }
+
+        .transfer-text {
+            color: #f59e0b;
+        }
+
+        .pagination-btn {
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background-color: #0070C0;
+            color: white;
+        }
+
+        .pagination-btn.active {
+            background-color: #0070C0;
+            color: white;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .search-input:focus {
+            border-color: #0070C0;
+            ring-color: #0070C0;
+        }
+
+        .filter-btn.active {
+            background-color: #0070C0;
+            color: white;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #0070C0;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <h1 class="text-3xl font-bold">💼 사우회 회비 관리 대시보드</h1>
+            <p class="text-blue-100 mt-2">실시간 재무 현황 및 거래 내역</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- 계좌 잔액 카드 -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">💰 현재 잔액 <span class="text-sm text-gray-500 font-normal">(2025년 11월 11일 기준)</span></h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-yellow-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">카카오뱅크 통장</p>
+                            <p class="text-2xl font-bold text-gray-800 mt-2" id="kakao-balance">₩0</p>
+                            <p class="text-xs text-gray-500 mt-1" id="kakao-account">-</p>
+                        </div>
+                        <div class="stat-icon bg-yellow-100">
+                            <span>🏦</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">세이프박스</p>
+                            <p class="text-2xl font-bold text-green-600 mt-2" id="safebox-balance">₩0</p>
+                            <p class="text-xs text-gray-500 mt-1" id="safebox-desc">-</p>
+                        </div>
+                        <div class="stat-icon bg-green-100">
+                            <span>🔒</span>
+                        </div>
+                    </div>
+                    <a href="safebox.html" class="text-xs text-blue-600 hover:underline mt-2 inline-block">세이프박스 상세 보기 →</a>
+                </div>
+
+                <div class="card bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl shadow-lg p-6 border-l-4 border-purple-700">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-purple-100 text-sm font-medium">💎 총 운용액</p>
+                            <p class="text-3xl font-bold mt-2" id="total-balance">₩0</p>
+                            <p class="text-xs text-purple-200 mt-1">실제 사용 가능 금액</p>
+                        </div>
+                        <div class="stat-icon bg-purple-400">
+                            <span>💰</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-gray-400 opacity-75">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">신한은행 (폐쇄)</p>
+                            <p class="text-2xl font-bold text-gray-400 mt-2">₩0</p>
+                            <p class="text-xs text-gray-400 mt-1">2020년 12월 이후 미사용</p>
+                        </div>
+                        <div class="stat-icon bg-gray-100">
+                            <span>🏦</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 주요 통계 카드 -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 주요 통계</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card bg-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">총 입금</p>
+                            <p class="text-2xl font-bold income-text mt-2" id="total-income">₩0</p>
+                        </div>
+                        <div class="stat-icon bg-green-100 text-green-600">
+                            <span>📈</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">총 출금</p>
+                            <p class="text-2xl font-bold expense-text mt-2" id="total-expense">₩0</p>
+                        </div>
+                        <div class="stat-icon bg-red-100 text-red-600">
+                            <span>📉</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">이자 수익</p>
+                            <p class="text-2xl font-bold text-blue-600 mt-2" id="total-interest">₩0</p>
+                        </div>
+                        <div class="stat-icon bg-blue-100 text-blue-600">
+                            <span>💵</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">총 거래 건수</p>
+                            <p class="text-2xl font-bold text-gray-800 mt-2" id="total-transactions">0</p>
+                        </div>
+                        <div class="stat-icon bg-gray-100 text-gray-600">
+                            <span>🔢</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 차트 섹션 -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📈 재무 분석</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="card bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">연도별 수입/지출</h3>
+                    <canvas id="yearlyChart"></canvas>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">수입/지출 비율</h3>
+                    <canvas id="ratioChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card bg-white rounded-xl shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">월별 추이 (2025년)</h3>
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </section>
+
+        <!-- 거래 내역 테이블 -->
+        <section class="mb-8">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">📋 거래 내역</h2>
+
+                    <!-- 검색 및 필터 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="col-span-1 md:col-span-2">
+                            <input
+                                type="text"
+                                id="search-input"
+                                placeholder="검색 (설명, 카테고리...)"
+                                class="search-input w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+                            />
+                        </div>
+
+                        <div>
+                            <select id="bank-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="all">모든 은행</option>
+                                <option value="kakao_bank">카카오뱅크</option>
+                                <option value="shinhan_bank">신한은행</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg">
+                            <label for="safebox-toggle" class="text-sm font-medium text-gray-700">세이프박스 포함</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="safebox-toggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 타입 필터 버튼 -->
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <button class="filter-btn active px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition" data-type="all">
+                            전체
+                        </button>
+                        <button class="filter-btn px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition" data-type="income">
+                            <span class="income-text">📈 입금</span>
+                        </button>
+                        <button class="filter-btn px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition" data-type="expense">
+                            <span class="expense-text">📉 출금</span>
+                        </button>
+                        <button class="filter-btn px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition" data-type="transfer">
+                            <span class="transfer-text">🔄 이체</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 테이블 -->
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="table-header text-white">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-sm font-semibold cursor-pointer hover:bg-blue-700" onclick="sortTable('date')">
+                                    날짜 <span id="sort-date">↕️</span>
+                                </th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold cursor-pointer hover:bg-blue-700" onclick="sortTable('type')">
+                                    유형 <span id="sort-type">↕️</span>
+                                </th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold">카테고리</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold">설명</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold">은행</th>
+                                <th class="px-6 py-4 text-right text-sm font-semibold cursor-pointer hover:bg-blue-700" onclick="sortTable('amount')">
+                                    금액 <span id="sort-amount">↕️</span>
+                                </th>
+                                <th class="px-6 py-4 text-right text-sm font-semibold">잔액</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-table">
+                            <!-- 데이터가 여기에 동적으로 추가됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 페이지네이션 -->
+                <div class="p-6 border-t border-gray-200 flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        <span id="showing-info">-</span>
+                    </div>
+                    <div class="flex gap-2" id="pagination">
+                        <!-- 페이지 버튼이 여기에 동적으로 추가됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400">© 2025 사우회 회비 관리 시스템</p>
+            <p class="text-gray-500 text-sm mt-2">데이터 업데이트: <span id="last-update">-</span></p>
+        </div>
+    </footer>
+
+    <script>
+        // 전역 변수
+        let dashboardData = null;
+        let filteredTransactions = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let currentSort = { field: 'date', direction: 'desc' };
+        let currentFilters = {
+            search: '',
+            bank: 'all',
+            type: 'all',
+            includeSafeBox: true
+        };
+
+        // 데이터 로드
+        async function loadData() {
+            try {
+                const response = await fetch('dashboard_data.json');
+                dashboardData = await response.json();
+                initializeDashboard();
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+                alert('데이터를 불러오는데 실패했습니다.');
+            }
+        }
+
+        // 대시보드 초기화
+        function initializeDashboard() {
+            updateBalanceCards();
+            updateStatisticsCards();
+            updateCharts();
+            filterAndDisplayTransactions();
+            updateLastUpdate();
+        }
+
+        // 금액 포맷팅 (쉼표 추가)
+        function formatCurrency(amount) {
+            return '₩' + amount.toLocaleString('ko-KR');
+        }
+
+        // 날짜 포맷팅
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            return `${year}년 ${month}월 ${day}일`;
+        }
+
+        // 잔액 카드 업데이트
+        function updateBalanceCards() {
+            const { accounts, summary } = dashboardData;
+
+            document.getElementById('kakao-balance').textContent = formatCurrency(summary.kakao_balance);
+            document.getElementById('kakao-account').textContent = accounts.kakao_bank.account_number;
+
+            document.getElementById('safebox-balance').textContent = formatCurrency(summary.safebox_balance);
+            document.getElementById('safebox-desc').textContent = accounts.safe_box.description;
+
+            document.getElementById('total-balance').textContent = formatCurrency(summary.total_balance);
+        }
+
+        // 통계 카드 업데이트
+        function updateStatisticsCards() {
+            const { summary } = dashboardData;
+
+            document.getElementById('total-income').textContent = formatCurrency(summary.total_income);
+            document.getElementById('total-expense').textContent = formatCurrency(summary.total_expense);
+            document.getElementById('total-interest').textContent = formatCurrency(summary.total_interest);
+            document.getElementById('total-transactions').textContent = summary.total_transactions + '건';
+        }
+
+        // 차트 업데이트
+        function updateCharts() {
+            createYearlyChart();
+            createRatioChart();
+            createMonthlyChart();
+        }
+
+        // 연도별 차트
+        function createYearlyChart() {
+            const { transactions } = dashboardData;
+            const yearlyData = {};
+
+            transactions.forEach(t => {
+                const year = new Date(t.date).getFullYear();
+                if (!yearlyData[year]) {
+                    yearlyData[year] = { income: 0, expense: 0 };
+                }
+
+                if (t.type === 'income' && t.category !== '이자') {
+                    yearlyData[year].income += t.amount;
+                } else if (t.type === 'expense') {
+                    yearlyData[year].expense += t.amount;
+                }
+            });
+
+            const years = Object.keys(yearlyData).sort();
+            const incomeData = years.map(y => yearlyData[y].income);
+            const expenseData = years.map(y => yearlyData[y].expense);
+
+            const ctx = document.getElementById('yearlyChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: years,
+                    datasets: [
+                        {
+                            label: '수입',
+                            data: incomeData,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: 'rgb(16, 185, 129)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: '지출',
+                            data: expenseData,
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: 'rgb(239, 68, 68)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₩' + (value / 1000000) + 'M';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 수입/지출 비율 차트
+        function createRatioChart() {
+            const { summary } = dashboardData;
+
+            const ctx = document.getElementById('ratioChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['수입', '지출'],
+                    datasets: [{
+                        data: [summary.total_income, summary.total_expense],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(239, 68, 68, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgb(16, 185, 129)',
+                            'rgb(239, 68, 68)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = summary.total_income + summary.total_expense;
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return context.label + ': ' + formatCurrency(context.parsed) + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 월별 추이 차트
+        function createMonthlyChart() {
+            const { transactions } = dashboardData;
+            const monthlyData = {};
+
+            // 2025년 데이터만 필터링
+            transactions.filter(t => new Date(t.date).getFullYear() === 2025).forEach(t => {
+                const month = new Date(t.date).getMonth() + 1;
+                if (!monthlyData[month]) {
+                    monthlyData[month] = { income: 0, expense: 0 };
+                }
+
+                if (t.type === 'income') {
+                    monthlyData[month].income += t.amount;
+                } else if (t.type === 'expense') {
+                    monthlyData[month].expense += t.amount;
+                }
+            });
+
+            const months = Array.from({length: 12}, (_, i) => i + 1);
+            const monthLabels = months.map(m => m + '월');
+            const incomeData = months.map(m => monthlyData[m]?.income || 0);
+            const expenseData = months.map(m => monthlyData[m]?.expense || 0);
+
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: [
+                        {
+                            label: '수입',
+                            data: incomeData,
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderColor: 'rgb(16, 185, 129)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: '지출',
+                            data: expenseData,
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderColor: 'rgb(239, 68, 68)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₩' + (value / 1000000) + 'M';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 거래 필터링 및 표시
+        function filterAndDisplayTransactions() {
+            const { transactions } = dashboardData;
+
+            // 필터 적용
+            filteredTransactions = transactions.filter(t => {
+                // 세이프박스 필터
+                if (!currentFilters.includeSafeBox && t.is_safe_box) {
+                    return false;
+                }
+
+                // 은행 필터
+                if (currentFilters.bank !== 'all' && t.bank !== currentFilters.bank) {
+                    return false;
+                }
+
+                // 타입 필터
+                if (currentFilters.type !== 'all' && t.type !== currentFilters.type) {
+                    return false;
+                }
+
+                // 검색 필터
+                if (currentFilters.search) {
+                    const searchLower = currentFilters.search.toLowerCase();
+                    return (
+                        t.description.toLowerCase().includes(searchLower) ||
+                        t.category.toLowerCase().includes(searchLower)
+                    );
+                }
+
+                return true;
+            });
+
+            // 정렬 적용
+            sortTransactions();
+
+            // 페이지 리셋
+            currentPage = 1;
+
+            // 테이블 렌더링
+            renderTransactionsTable();
+            renderPagination();
+        }
+
+        // 거래 정렬
+        function sortTransactions() {
+            filteredTransactions.sort((a, b) => {
+                let aVal, bVal;
+
+                switch(currentSort.field) {
+                    case 'date':
+                        aVal = new Date(a.date);
+                        bVal = new Date(b.date);
+                        break;
+                    case 'amount':
+                        aVal = a.amount;
+                        bVal = b.amount;
+                        break;
+                    case 'type':
+                        aVal = a.type;
+                        bVal = b.type;
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        // 테이블 렌더링
+        function renderTransactionsTable() {
+            const startIdx = (currentPage - 1) * itemsPerPage;
+            const endIdx = startIdx + itemsPerPage;
+            const pageTransactions = filteredTransactions.slice(startIdx, endIdx);
+
+            const tbody = document.getElementById('transactions-table');
+            tbody.innerHTML = '';
+
+            if (pageTransactions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            거래 내역이 없습니다.
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('showing-info').textContent = '검색 결과 없음';
+                return;
+            }
+
+            pageTransactions.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-200 hover:bg-gray-50 transition';
+
+                // 타입 표시
+                let typeDisplay = '';
+                let typeClass = '';
+                switch(t.type) {
+                    case 'income':
+                        typeDisplay = '📈 입금';
+                        typeClass = 'income-text';
+                        break;
+                    case 'expense':
+                        typeDisplay = '📉 출금';
+                        typeClass = 'expense-text';
+                        break;
+                    case 'transfer':
+                        typeDisplay = '🔄 이체';
+                        typeClass = 'transfer-text';
+                        break;
+                }
+
+                // 은행 표시
+                let bankDisplay = '';
+                switch(t.bank) {
+                    case 'kakao_bank':
+                        bankDisplay = '카카오뱅크';
+                        break;
+                    case 'shinhan_bank':
+                        bankDisplay = '신한은행';
+                        break;
+                    default:
+                        bankDisplay = t.bank;
+                }
+
+                // 금액 표시 (입금은 +, 출금은 -)
+                const amountPrefix = t.type === 'income' ? '+' : t.type === 'expense' ? '-' : '';
+                const amountClass = t.type === 'income' ? 'income-text' : t.type === 'expense' ? 'expense-text' : 'transfer-text';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 text-sm text-gray-900">${formatDate(t.date)}</td>
+                    <td class="px-6 py-4 text-sm font-medium ${typeClass}">${typeDisplay}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${t.category}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${t.description}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${bankDisplay}</td>
+                    <td class="px-6 py-4 text-sm font-semibold ${amountClass} text-right">${amountPrefix}${formatCurrency(t.amount)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600 text-right">${formatCurrency(t.balance_after)}</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+
+            // 페이지 정보 업데이트
+            const total = filteredTransactions.length;
+            document.getElementById('showing-info').textContent =
+                `${startIdx + 1}-${Math.min(endIdx, total)} / 총 ${total}건`;
+        }
+
+        // 페이지네이션 렌더링
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            // 이전 버튼
+            const prevBtn = createPaginationButton('이전', currentPage > 1, () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTransactionsTable();
+                    renderPagination();
+                }
+            });
+            pagination.appendChild(prevBtn);
+
+            // 페이지 번호
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = createPaginationButton(i, true, () => {
+                    currentPage = i;
+                    renderTransactionsTable();
+                    renderPagination();
+                }, i === currentPage);
+                pagination.appendChild(pageBtn);
+            }
+
+            // 다음 버튼
+            const nextBtn = createPaginationButton('다음', currentPage < totalPages, () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTransactionsTable();
+                    renderPagination();
+                }
+            });
+            pagination.appendChild(nextBtn);
+        }
+
+        // 페이지네이션 버튼 생성
+        function createPaginationButton(text, enabled, onClick, isActive = false) {
+            const btn = document.createElement('button');
+            btn.textContent = text;
+            btn.className = `pagination-btn px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium ${isActive ? 'active' : ''}`;
+            btn.disabled = !enabled;
+            btn.onclick = onClick;
+            return btn;
+        }
+
+        // 테이블 정렬
+        function sortTable(field) {
+            if (currentSort.field === field) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.field = field;
+                currentSort.direction = 'desc';
+            }
+
+            // 정렬 아이콘 업데이트
+            document.querySelectorAll('[id^="sort-"]').forEach(el => {
+                el.textContent = '↕️';
+            });
+
+            const icon = currentSort.direction === 'asc' ? '↑' : '↓';
+            document.getElementById(`sort-${field}`).textContent = icon;
+
+            filterAndDisplayTransactions();
+        }
+
+        // 마지막 업데이트 시간
+        function updateLastUpdate() {
+            const now = new Date();
+            const formatted = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+            document.getElementById('last-update').textContent = formatted;
+        }
+
+        // 이벤트 리스너 설정
+        document.addEventListener('DOMContentLoaded', () => {
+            // 데이터 로드
+            loadData();
+
+            // 검색 입력
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                currentFilters.search = e.target.value;
+                filterAndDisplayTransactions();
+            });
+
+            // 은행 필터
+            document.getElementById('bank-filter').addEventListener('change', (e) => {
+                currentFilters.bank = e.target.value;
+                filterAndDisplayTransactions();
+            });
+
+            // 세이프박스 토글
+            document.getElementById('safebox-toggle').addEventListener('change', (e) => {
+                currentFilters.includeSafeBox = e.target.checked;
+                filterAndDisplayTransactions();
+            });
+
+            // 타입 필터 버튼
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilters.type = btn.dataset.type;
+                    filterAndDisplayTransactions();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
