@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>엑셀 데이터 로더 - 사우회 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        .drop-zone {
+            border: 3px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .drop-zone.dragover {
+            border-color: #0070C0;
+            background-color: #ebf8ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <header class="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <h1 class="text-3xl font-bold">📊 엑셀 데이터 로더</h1>
+            <p class="text-blue-100 mt-2">엑셀 파일을 업로드하여 대시보드 데이터를 생성하세요</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- 파일 업로드 영역 -->
+        <section class="bg-white rounded-xl shadow-lg p-8 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📁 엑셀 파일 업로드</h2>
+            <p class="text-gray-600 mb-6">사우회 회비 결산 보고서 엑셀 파일을 드래그하거나 클릭하여 업로드하세요.</p>
+
+            <div class="drop-zone mb-6 p-12 rounded-xl text-center cursor-pointer" id="dropZone">
+                <div class="text-6xl mb-4">📄</div>
+                <p class="text-lg text-gray-700 font-medium mb-2">파일을 여기에 드래그하거나 클릭하여 선택하세요</p>
+                <p class="text-sm text-gray-500">지원 형식: .xlsx, .xls</p>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden">
+            </div>
+
+            <div id="loadingIndicator" class="hidden">
+                <div class="flex items-center justify-center space-x-2 text-blue-600">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span class="text-lg font-medium">처리 중...</span>
+                </div>
+            </div>
+
+            <div id="result" class="hidden">
+                <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-green-700 font-medium" id="resultMessage"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error" class="hidden">
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700 font-medium" id="errorMessage"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 통계 표시 -->
+        <section id="stats" class="hidden bg-white rounded-xl shadow-lg p-8 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📈 처리 결과</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">총 거래 건수</p>
+                    <p class="text-2xl font-bold text-blue-600" id="totalTransactions">0</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">총 입금</p>
+                    <p class="text-2xl font-bold text-green-600" id="totalIncome">₩0</p>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">총 출금</p>
+                    <p class="text-2xl font-bold text-red-600" id="totalExpense">₩0</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">현재 잔액</p>
+                    <p class="text-2xl font-bold text-purple-600" id="totalBalance">₩0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 대시보드로 이동 버튼 -->
+        <div class="text-center">
+            <a href="index.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition">
+                대시보드로 이동 →
+            </a>
+        </div>
+    </main>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const result = document.getElementById('result');
+        const error = document.getElementById('error');
+        const stats = document.getElementById('stats');
+
+        // 드래그 앤 드롭 이벤트
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // 파일 처리 함수
+        function handleFile(file) {
+            // UI 초기화
+            loadingIndicator.classList.remove('hidden');
+            result.classList.add('hidden');
+            error.classList.add('hidden');
+            stats.classList.add('hidden');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+
+                    // 데이터 처리
+                    const dashboardData = processExcelData(workbook);
+
+                    // dashboard_data.json으로 저장 (localStorage 사용)
+                    localStorage.setItem('dashboard_data', JSON.stringify(dashboardData));
+
+                    // 결과 표시
+                    showResult(dashboardData);
+
+                } catch (err) {
+                    showError('파일 처리 중 오류가 발생했습니다: ' + err.message);
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                }
+            };
+
+            reader.onerror = function() {
+                showError('파일을 읽을 수 없습니다.');
+                loadingIndicator.classList.add('hidden');
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 엑셀 데이터 처리
+        function processExcelData(workbook) {
+            const transactions = [];
+
+            // 전체 거래 내역 시트 처리
+            if (workbook.SheetNames.includes('전체 거래 내역')) {
+                const sheet = workbook.Sheets['전체 거래 내역'];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                // 헤더 찾기 (거래일시가 포함된 행)
+                let headerIndex = -1;
+                for (let i = 0; i < rows.length; i++) {
+                    if (rows[i][0] === '거래일시') {
+                        headerIndex = i;
+                        break;
+                    }
+                }
+
+                if (headerIndex >= 0) {
+                    const headers = rows[headerIndex];
+                    for (let i = headerIndex + 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (!row[0]) continue; // 빈 행 건너뛰기
+
+                        const trans = {
+                            date: parseDate(row[0]),
+                            type: row[1] && row[1].includes('입금') ? 'income' : 'expense',
+                            amount: Math.abs(cleanNumber(row[2])),
+                            description: String(row[3] || ''),
+                            bank: row[4] && row[4].includes('신한') ? 'shinhan_bank' : 'kakao_bank',
+                            is_safe_box: false,
+                            category: determineCategory(row[3], row[1]),
+                            balance_after: 0
+                        };
+
+                        // 취소 거래 처리
+                        if (row[1] && row[1].includes('취소')) {
+                            trans.type = row[1].includes('입금') ? 'expense' : 'income';
+                        }
+
+                        transactions.push(trans);
+                    }
+                }
+            }
+
+            // 세이프박스 거래내역 시트 처리
+            if (workbook.SheetNames.includes('세이프박스 거래내역')) {
+                const sheet = workbook.Sheets['세이프박스 거래내역'];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                let headerIndex = -1;
+                for (let i = 0; i < rows.length; i++) {
+                    if (rows[i][0] === '거래일시') {
+                        headerIndex = i;
+                        break;
+                    }
+                }
+
+                if (headerIndex >= 0) {
+                    for (let i = headerIndex + 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (!row[0]) continue;
+
+                        const trans = {
+                            date: parseDate(row[0]),
+                            type: row[1] && row[1].includes('입금') ? 'income' : 'expense',
+                            amount: Math.abs(cleanNumber(row[2])),
+                            description: '세이프박스',
+                            bank: 'kakao_bank',
+                            is_safe_box: true,
+                            category: '세이프박스',
+                            balance_after: 0
+                        };
+
+                        if (row[1] && row[1].includes('취소')) {
+                            trans.type = row[1].includes('입금') ? 'expense' : 'income';
+                        }
+
+                        transactions.push(trans);
+                    }
+                }
+            }
+
+            // 날짜순 정렬
+            transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // 잔액 계산
+            let balance = 0;
+            let safeboxBalance = 0;
+
+            transactions.forEach(trans => {
+                if (trans.is_safe_box) {
+                    if (trans.type === 'income') {
+                        safeboxBalance += trans.amount;
+                    } else {
+                        safeboxBalance -= trans.amount;
+                    }
+                    trans.balance_after = safeboxBalance;
+                } else {
+                    if (trans.type === 'income') {
+                        balance += trans.amount;
+                    } else {
+                        balance -= trans.amount;
+                    }
+                    trans.balance_after = balance;
+                }
+            });
+
+            // 요약 계산
+            const summary = calculateSummary(transactions);
+
+            return {
+                accounts: {
+                    kakao_bank: {
+                        account_number: '3333-28-1790885',
+                        description: '카카오뱅크 저축예금',
+                        balance: summary.kakao_balance
+                    },
+                    safe_box: {
+                        description: '안전 자산 운용',
+                        balance: summary.safebox_balance
+                    },
+                    shinhan_bank: {
+                        account_number: '110-502-876387',
+                        description: '신한은행 (폐쇄)',
+                        balance: 0,
+                        is_closed: true
+                    }
+                },
+                summary: summary,
+                transactions: transactions,
+                last_updated: new Date().toISOString()
+            };
+        }
+
+        // 날짜 파싱
+        function parseDate(dateValue) {
+            if (!dateValue) return null;
+
+            // 엑셀 날짜 숫자인 경우
+            if (typeof dateValue === 'number') {
+                const date = XLSX.SSF.parse_date_code(dateValue);
+                return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+            }
+
+            // 문자열인 경우
+            const str = String(dateValue);
+            const match = str.match(/(\d{4})[-.\s]?(\d{1,2})[-.\s]?(\d{1,2})/);
+            if (match) {
+                return `${match[1]}-${String(match[2]).padStart(2, '0')}-${String(match[3]).padStart(2, '0')}`;
+            }
+
+            return str;
+        }
+
+        // 숫자 정리
+        function cleanNumber(value) {
+            if (typeof value === 'number') return value;
+            if (!value) return 0;
+            const str = String(value).replace(/[^0-9.-]/g, '');
+            return parseFloat(str) || 0;
+        }
+
+        // 카테고리 결정
+        function determineCategory(description, type) {
+            const desc = String(description || '').toLowerCase();
+
+            if (desc.includes('이자')) return '이자';
+            if (desc.includes('세이프박스')) return '세이프박스';
+            if (desc.includes('회비') || desc.includes('납부')) return '회비 납부';
+            if (desc.includes('atm')) return 'ATM 출금';
+            if (desc.includes('이체')) return type && type.includes('입금') ? '이체 입금' : '일반 이체';
+            if (desc.includes('송금')) return '송금';
+
+            return type && type.includes('입금') ? '기타 입금' : '기타 출금';
+        }
+
+        // 요약 통계 계산
+        function calculateSummary(transactions) {
+            let totalIncome = 0;
+            let totalExpense = 0;
+            let totalInterest = 0;
+            let kakaoBalance = 0;
+            let safeboxBalance = 0;
+
+            transactions.forEach(trans => {
+                if (trans.is_safe_box) {
+                    if (trans.type === 'income') {
+                        safeboxBalance += trans.amount;
+                    } else {
+                        safeboxBalance -= trans.amount;
+                    }
+                } else {
+                    if (trans.type === 'income') {
+                        totalIncome += trans.amount;
+                        if (trans.category === '이자') {
+                            totalInterest += trans.amount;
+                        }
+                        kakaoBalance += trans.amount;
+                    } else {
+                        totalExpense += trans.amount;
+                        kakaoBalance -= trans.amount;
+                    }
+                }
+            });
+
+            return {
+                total_income: totalIncome,
+                total_expense: totalExpense,
+                total_interest: totalInterest,
+                kakao_balance: kakaoBalance,
+                safebox_balance: safeboxBalance,
+                total_balance: kakaoBalance + safeboxBalance,
+                total_transactions: transactions.length
+            };
+        }
+
+        // 결과 표시
+        function showResult(data) {
+            result.classList.remove('hidden');
+            stats.classList.remove('hidden');
+
+            document.getElementById('resultMessage').textContent =
+                `데이터가 성공적으로 처리되었습니다! (${data.transactions.length}건의 거래)`;
+
+            document.getElementById('totalTransactions').textContent = data.summary.total_transactions + '건';
+            document.getElementById('totalIncome').textContent = formatCurrency(data.summary.total_income);
+            document.getElementById('totalExpense').textContent = formatCurrency(data.summary.total_expense);
+            document.getElementById('totalBalance').textContent = formatCurrency(data.summary.total_balance);
+        }
+
+        // 에러 표시
+        function showError(message) {
+            error.classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        // 금액 포맷
+        function formatCurrency(amount) {
+            return '₩' + amount.toLocaleString('ko-KR');
+        }
+
+        // 페이지 로드 시 기존 데이터 확인
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedData = localStorage.getItem('dashboard_data');
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    showResult(data);
+                } catch (e) {
+                    console.error('저장된 데이터를 불러올 수 없습니다.', e);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

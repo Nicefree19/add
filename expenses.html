@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지출 분석 - 사우회 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .card {
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 112, 192, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold">💸 지출 상세 분석</h1>
+                    <p class="text-blue-100 mt-2">카테고리별 지출 현황 및 추이</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="index.html" class="bg-white text-blue-600 hover:bg-blue-50 font-semibold py-2 px-4 rounded-lg shadow transition">
+                        🏠 대시보드
+                    </a>
+                    <a href="members.html" class="bg-blue-500 hover:bg-blue-400 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
+                        👥 회원 관리
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- 지출 요약 -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 지출 요약</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">총 지출</p>
+                            <p class="text-3xl font-bold text-red-600 mt-2" id="totalExpense">₩0</p>
+                        </div>
+                        <div class="text-4xl">💳</div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">카테고리 수</p>
+                            <p class="text-3xl font-bold text-orange-600 mt-2" id="categoryCount">0</p>
+                        </div>
+                        <div class="text-4xl">📑</div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">평균 거래액</p>
+                            <p class="text-3xl font-bold text-purple-600 mt-2" id="avgExpense">₩0</p>
+                        </div>
+                        <div class="text-4xl">📊</div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">총 거래 건수</p>
+                            <p class="text-3xl font-bold text-blue-600 mt-2" id="transactionCount">0</p>
+                        </div>
+                        <div class="text-4xl">🔢</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 차트 섹션 -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📈 지출 분석 차트</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="card bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">카테고리별 지출 비율</h3>
+                    <canvas id="categoryPieChart"></canvas>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">카테고리별 지출 금액</h3>
+                    <canvas id="categoryBarChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card bg-white rounded-xl shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">월별 카테고리 지출 추이</h3>
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+        </section>
+
+        <!-- 카테고리별 상세 내역 -->
+        <section class="mb-8">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">📋 카테고리별 상세 내역</h2>
+                </div>
+
+                <div id="categoriesList" class="p-6">
+                    <!-- 카테고리 카드가 여기에 동적으로 추가됩니다 -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400">© 2025 사우회 회비 관리 시스템</p>
+            <p class="text-gray-500 text-sm mt-2">데이터 업데이트: <span id="last-update">-</span></p>
+        </div>
+    </footer>
+
+    <script>
+        let expenseData = null;
+        let allCategories = [];
+
+        // 데이터 로드
+        async function loadData() {
+            try {
+                // localStorage에서 향상된 데이터 확인
+                const savedData = localStorage.getItem('enhanced_dashboard_data');
+                if (savedData) {
+                    console.log('localStorage에서 향상된 데이터 로드');
+                    expenseData = JSON.parse(savedData);
+                } else {
+                    // enhanced_dashboard_data.json 파일에서 로드
+                    console.log('JSON 파일에서 데이터 로드');
+                    const response = await fetch('enhanced_dashboard_data.json');
+                    expenseData = await response.json();
+                }
+
+                initializePage();
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+                showError();
+            }
+        }
+
+        // 페이지 초기화
+        function initializePage() {
+            if (!expenseData || !expenseData.expense_by_category) {
+                showError();
+                return;
+            }
+
+            // 카테고리 데이터 처리
+            allCategories = Object.entries(expenseData.expense_by_category).map(([name, info]) => ({
+                name,
+                ...info
+            }));
+
+            // 총액 기준 정렬
+            allCategories.sort((a, b) => b.total - a.total);
+
+            updateSummary();
+            updateCharts();
+            renderCategoriesList();
+            updateLastUpdate();
+        }
+
+        // 요약 통계 업데이트
+        function updateSummary() {
+            const totalExpense = allCategories.reduce((sum, c) => sum + c.total, 0);
+            const totalCount = allCategories.reduce((sum, c) => sum + c.count, 0);
+            const avgExpense = totalCount > 0 ? totalExpense / totalCount : 0;
+
+            document.getElementById('totalExpense').textContent = formatCurrency(totalExpense);
+            document.getElementById('categoryCount').textContent = allCategories.length;
+            document.getElementById('avgExpense').textContent = formatCurrency(avgExpense);
+            document.getElementById('transactionCount').textContent = totalCount + '건';
+        }
+
+        // 차트 업데이트
+        function updateCharts() {
+            createCategoryPieChart();
+            createCategoryBarChart();
+            createMonthlyTrendChart();
+        }
+
+        // 카테고리 파이 차트
+        function createCategoryPieChart() {
+            const top10 = allCategories.slice(0, 10);
+            const colors = [
+                '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6',
+                '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'
+            ];
+
+            const ctx = document.getElementById('categoryPieChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: top10.map(c => c.name),
+                    datasets: [{
+                        data: top10.map(c => c.total),
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return context.label + ': ' + formatCurrency(context.parsed) + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 카테고리 막대 차트
+        function createCategoryBarChart() {
+            const top10 = allCategories.slice(0, 10);
+
+            const ctx = document.getElementById('categoryBarChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: top10.map(c => c.name),
+                    datasets: [{
+                        label: '지출 금액',
+                        data: top10.map(c => c.total),
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: 'rgb(239, 68, 68)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₩' + (value / 1000000).toFixed(1) + 'M';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 월별 추이 차트
+        function createMonthlyTrendChart() {
+            if (!expenseData.monthly_trends) {
+                return;
+            }
+
+            const monthlyData = expenseData.monthly_trends;
+            const sortedMonths = Object.keys(monthlyData).sort();
+
+            // 최근 12개월만 표시
+            const recentMonths = sortedMonths.slice(-12);
+
+            const ctx = document.getElementById('monthlyTrendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: recentMonths,
+                    datasets: [{
+                        label: '월별 지출',
+                        data: recentMonths.map(m => monthlyData[m].expense),
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        borderColor: 'rgb(239, 68, 68)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₩' + (value / 1000000).toFixed(1) + 'M';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '지출: ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 카테고리 목록 렌더링
+        function renderCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            container.innerHTML = '';
+
+            allCategories.forEach((category, index) => {
+                const card = createCategoryCard(category, index + 1);
+                container.appendChild(card);
+            });
+        }
+
+        // 카테고리 카드 생성
+        function createCategoryCard(category, rank) {
+            const div = document.createElement('div');
+            div.className = 'bg-gray-50 rounded-lg p-5 mb-4 border-l-4 border-red-500';
+
+            const avgAmount = category.count > 0 ? category.total / category.count : 0;
+
+            div.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl font-bold text-gray-400">#${rank}</span>
+                        <h3 class="text-xl font-bold text-gray-800">${category.name}</h3>
+                    </div>
+                    <span class="text-2xl font-bold text-red-600">${formatCurrency(category.total)}</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="bg-white p-3 rounded">
+                        <p class="text-sm text-gray-600">거래 건수</p>
+                        <p class="text-lg font-semibold text-gray-800">${category.count}건</p>
+                    </div>
+
+                    <div class="bg-white p-3 rounded">
+                        <p class="text-sm text-gray-600">평균 금액</p>
+                        <p class="text-lg font-semibold text-gray-800">${formatCurrency(avgAmount)}</p>
+                    </div>
+
+                    <div class="bg-white p-3 rounded">
+                        <p class="text-sm text-gray-600">비중</p>
+                        <p class="text-lg font-semibold text-gray-800">${calculatePercentage(category.total)}%</p>
+                    </div>
+                </div>
+
+                <details class="mt-4">
+                    <summary class="cursor-pointer text-sm text-blue-600 hover:text-blue-800 font-medium">
+                        최근 거래 내역 보기 (${category.transactions.length}건)
+                    </summary>
+                    <div class="mt-3 space-y-2 max-h-60 overflow-y-auto">
+                        ${category.transactions.slice().reverse().slice(0, 10).map(t => `
+                            <div class="text-sm bg-white p-3 rounded flex justify-between items-center">
+                                <div>
+                                    <span class="text-gray-600">${t.date}</span>
+                                    <span class="text-gray-800 ml-2">${t.description}</span>
+                                </div>
+                                <span class="font-semibold text-red-600">${formatCurrency(t.amount)}</span>
+                            </div>
+                        `).join('')}
+                        ${category.transactions.length > 10 ? `<div class="text-xs text-gray-500 text-center">... 외 ${category.transactions.length - 10}건</div>` : ''}
+                    </div>
+                </details>
+            `;
+
+            return div;
+        }
+
+        // 비중 계산
+        function calculatePercentage(amount) {
+            const total = allCategories.reduce((sum, c) => sum + c.total, 0);
+            return total > 0 ? ((amount / total) * 100).toFixed(1) : 0;
+        }
+
+        // 금액 포맷
+        function formatCurrency(amount) {
+            return '₩' + Math.round(amount).toLocaleString('ko-KR');
+        }
+
+        // 마지막 업데이트 시간
+        function updateLastUpdate() {
+            const timestamp = expenseData.enhanced_processing_date || expenseData.last_updated;
+            document.getElementById('last-update').textContent = timestamp || '-';
+        }
+
+        // 에러 표시
+        function showError() {
+            const main = document.querySelector('main');
+            main.innerHTML = `
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-lg shadow-md">
+                    <div class="flex items-center mb-4">
+                        <svg class="h-8 w-8 text-yellow-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <h2 class="text-2xl font-bold text-yellow-800">데이터를 불러올 수 없습니다</h2>
+                    </div>
+                    <p class="text-yellow-700 mb-4">향상된 데이터가 없습니다. Python 스크립트를 실행하거나 엑셀 파일을 업로드해주세요.</p>
+                    <div class="flex gap-4">
+                        <a href="excel_loader.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow transition">
+                            엑셀 파일 업로드하기 →
+                        </a>
+                        <a href="index.html" class="inline-block bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg shadow transition">
+                            대시보드로 돌아가기
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 이벤트 리스너
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>세이프박스 상세 - 사우회 회비 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .card {
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.1);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .deposit-text {
+            color: #f59e0b;
+        }
+
+        .withdraw-text {
+            color: #10b981;
+        }
+
+        .interest-text {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold">🔒 세이프박스 상세</h1>
+                    <p class="text-green-100 mt-2">카카오뱅크 개인금고 운용 내역</p>
+                </div>
+                <a href="index.html" class="bg-white text-green-600 px-4 py-2 rounded-lg font-medium hover:bg-green-50 transition">
+                    ← 메인 대시보드
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- 세이프박스 요약 카드 -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 세이프박스 요약</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-green-100 text-sm font-medium">현재 보관액</p>
+                            <p class="text-3xl font-bold mt-2" id="current-balance">₩0</p>
+                            <p class="text-xs text-green-200 mt-1">2025년 11월 11일 기준</p>
+                        </div>
+                        <div class="stat-icon bg-green-400">
+                            <span>🔒</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">총 입금액</p>
+                            <p class="text-2xl font-bold deposit-text mt-2" id="total-deposit">₩0</p>
+                            <p class="text-xs text-gray-500 mt-1">세이프박스에 넣은 금액</p>
+                        </div>
+                        <div class="stat-icon bg-orange-100 text-orange-600">
+                            <span>📥</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">총 출금액</p>
+                            <p class="text-2xl font-bold withdraw-text mt-2" id="total-withdraw">₩0</p>
+                            <p class="text-xs text-gray-500 mt-1">세이프박스에서 꺼낸 금액</p>
+                        </div>
+                        <div class="stat-icon bg-green-100 text-green-600">
+                            <span>📤</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium">이자 수익</p>
+                            <p class="text-2xl font-bold interest-text mt-2" id="total-interest">₩0</p>
+                            <p class="text-xs text-gray-500 mt-1" id="interest-count">-</p>
+                        </div>
+                        <div class="stat-icon bg-blue-100 text-blue-600">
+                            <span>💵</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 차트 섹션 -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📈 세이프박스 운용 분석</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">입출금 비율</h3>
+                    <canvas id="ratioChart"></canvas>
+                </div>
+
+                <div class="card bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">월별 세이프박스 잔액 추이</h3>
+                    <canvas id="balanceChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- 세이프박스 거래 내역 -->
+        <section class="mb-8">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">🔄 세이프박스 거래 내역</h2>
+
+                    <!-- 필터 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <input
+                                type="text"
+                                id="search-input"
+                                placeholder="검색..."
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            />
+                        </div>
+
+                        <div>
+                            <select id="type-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="all">모든 거래</option>
+                                <option value="deposit">입금 (넣기)</option>
+                                <option value="withdraw">출금 (꺼내기)</option>
+                                <option value="interest">이자</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 테이블 -->
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="table-header text-white">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-sm font-semibold cursor-pointer hover:bg-green-700" onclick="sortTable('date')">
+                                    날짜 <span id="sort-date">↕️</span>
+                                </th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold cursor-pointer hover:bg-green-700" onclick="sortTable('type')">
+                                    유형 <span id="sort-type">↕️</span>
+                                </th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold">설명</th>
+                                <th class="px-6 py-4 text-right text-sm font-semibold cursor-pointer hover:bg-green-700" onclick="sortTable('amount')">
+                                    금액 <span id="sort-amount">↕️</span>
+                                </th>
+                                <th class="px-6 py-4 text-right text-sm font-semibold">잔액</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-table">
+                            <!-- 데이터가 여기에 동적으로 추가됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 페이지네이션 -->
+                <div class="p-6 border-t border-gray-200 flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        <span id="showing-info">-</span>
+                    </div>
+                    <div class="flex gap-2" id="pagination">
+                        <!-- 페이지 버튼이 여기에 동적으로 추가됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400">© 2025 사우회 회비 관리 시스템</p>
+            <p class="text-gray-500 text-sm mt-2">세이프박스 상세 페이지</p>
+        </div>
+    </footer>
+
+    <script>
+        // 전역 변수
+        let dashboardData = null;
+        let filteredTransactions = [];
+        let currentPage = 1;
+        const itemsPerPage = 15;
+        let currentSort = { field: 'date', direction: 'desc' };
+        let currentFilters = {
+            search: '',
+            type: 'all'
+        };
+
+        // 데이터 로드
+        async function loadData() {
+            try {
+                const response = await fetch('dashboard_data.json');
+                dashboardData = await response.json();
+                initializeDashboard();
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+                alert('데이터를 불러오는데 실패했습니다.');
+            }
+        }
+
+        // 대시보드 초기화
+        function initializeDashboard() {
+            updateSummaryCards();
+            updateCharts();
+            filterAndDisplayTransactions();
+        }
+
+        // 금액 포맷팅
+        function formatCurrency(amount) {
+            return '₩' + amount.toLocaleString('ko-KR');
+        }
+
+        // 날짜 포맷팅
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            return `${year}년 ${month}월 ${day}일`;
+        }
+
+        // 요약 카드 업데이트
+        function updateSummaryCards() {
+            const { summary } = dashboardData;
+
+            document.getElementById('current-balance').textContent = formatCurrency(summary.safebox_balance);
+            document.getElementById('total-deposit').textContent = formatCurrency(summary.safebox_deposit_total);
+            document.getElementById('total-withdraw').textContent = formatCurrency(summary.safebox_withdraw_total);
+            document.getElementById('total-interest').textContent = formatCurrency(summary.total_interest);
+            document.getElementById('interest-count').textContent = `총 ${summary.interest_count}회 이자 입금`;
+        }
+
+        // 차트 업데이트
+        function updateCharts() {
+            createRatioChart();
+            createBalanceChart();
+        }
+
+        // 입출금 비율 차트
+        function createRatioChart() {
+            const { summary } = dashboardData;
+
+            const ctx = document.getElementById('ratioChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['입금 (넣기)', '출금 (꺼내기)'],
+                    datasets: [{
+                        data: [summary.safebox_deposit_total, summary.safebox_withdraw_total],
+                        backgroundColor: [
+                            'rgba(245, 158, 11, 0.7)',
+                            'rgba(16, 185, 129, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgb(245, 158, 11)',
+                            'rgb(16, 185, 129)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = summary.safebox_deposit_total + summary.safebox_withdraw_total;
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return context.label + ': ' + formatCurrency(context.parsed) + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 잔액 추이 차트
+        function createBalanceChart() {
+            const { safebox_transactions } = dashboardData;
+
+            // 날짜순 정렬 (오래된 것부터)
+            const sortedTransactions = [...safebox_transactions].sort((a, b) =>
+                new Date(a.date) - new Date(b.date)
+            );
+
+            // 월별 데이터 추출 (최근 12개월)
+            const labels = [];
+            const balances = [];
+
+            sortedTransactions.slice(-12).forEach(t => {
+                const date = new Date(t.date);
+                const label = `${date.getMonth() + 1}/${date.getDate()}`;
+                labels.push(label);
+                balances.push(t.balance_after);
+            });
+
+            const ctx = document.getElementById('balanceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '세이프박스 잔액',
+                        data: balances,
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderColor: 'rgb(16, 185, 129)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₩' + (value / 1000000) + 'M';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '잔액: ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 거래 필터링 및 표시
+        function filterAndDisplayTransactions() {
+            const { safebox_transactions } = dashboardData;
+
+            // 필터 적용
+            filteredTransactions = safebox_transactions.filter(t => {
+                // 타입 필터
+                if (currentFilters.type !== 'all' && t.type !== currentFilters.type) {
+                    return false;
+                }
+
+                // 검색 필터
+                if (currentFilters.search) {
+                    const searchLower = currentFilters.search.toLowerCase();
+                    return t.description.toLowerCase().includes(searchLower);
+                }
+
+                return true;
+            });
+
+            // 정렬 적용
+            sortTransactions();
+
+            // 페이지 리셋
+            currentPage = 1;
+
+            // 테이블 렌더링
+            renderTransactionsTable();
+            renderPagination();
+        }
+
+        // 거래 정렬
+        function sortTransactions() {
+            filteredTransactions.sort((a, b) => {
+                let aVal, bVal;
+
+                switch(currentSort.field) {
+                    case 'date':
+                        aVal = new Date(a.date);
+                        bVal = new Date(b.date);
+                        break;
+                    case 'amount':
+                        aVal = a.amount;
+                        bVal = b.amount;
+                        break;
+                    case 'type':
+                        aVal = a.type;
+                        bVal = b.type;
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        // 테이블 렌더링
+        function renderTransactionsTable() {
+            const startIdx = (currentPage - 1) * itemsPerPage;
+            const endIdx = startIdx + itemsPerPage;
+            const pageTransactions = filteredTransactions.slice(startIdx, endIdx);
+
+            const tbody = document.getElementById('transactions-table');
+            tbody.innerHTML = '';
+
+            if (pageTransactions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                            거래 내역이 없습니다.
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('showing-info').textContent = '검색 결과 없음';
+                return;
+            }
+
+            pageTransactions.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-200 hover:bg-gray-50 transition';
+
+                // 타입 표시
+                let typeDisplay = '';
+                let typeClass = '';
+                switch(t.type) {
+                    case 'deposit':
+                        typeDisplay = '📥 입금 (넣기)';
+                        typeClass = 'deposit-text';
+                        break;
+                    case 'withdraw':
+                        typeDisplay = '📤 출금 (꺼내기)';
+                        typeClass = 'withdraw-text';
+                        break;
+                    case 'interest':
+                        typeDisplay = '💵 이자';
+                        typeClass = 'interest-text';
+                        break;
+                }
+
+                // 금액 표시
+                const amountClass = t.type === 'deposit' ? 'deposit-text' : t.type === 'withdraw' ? 'withdraw-text' : 'interest-text';
+                const amountPrefix = t.type === 'deposit' ? '-' : '+';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 text-sm text-gray-900">${formatDate(t.date)}</td>
+                    <td class="px-6 py-4 text-sm font-medium ${typeClass}">${typeDisplay}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${t.description}</td>
+                    <td class="px-6 py-4 text-sm font-semibold ${amountClass} text-right">${amountPrefix}${formatCurrency(t.amount)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600 text-right">${formatCurrency(t.balance_after)}</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+
+            // 페이지 정보 업데이트
+            const total = filteredTransactions.length;
+            document.getElementById('showing-info').textContent =
+                `${startIdx + 1}-${Math.min(endIdx, total)} / 총 ${total}건`;
+        }
+
+        // 페이지네이션 렌더링
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            // 이전 버튼
+            const prevBtn = createPaginationButton('이전', currentPage > 1, () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTransactionsTable();
+                    renderPagination();
+                }
+            });
+            pagination.appendChild(prevBtn);
+
+            // 페이지 번호
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = createPaginationButton(i, true, () => {
+                    currentPage = i;
+                    renderTransactionsTable();
+                    renderPagination();
+                }, i === currentPage);
+                pagination.appendChild(pageBtn);
+            }
+
+            // 다음 버튼
+            const nextBtn = createPaginationButton('다음', currentPage < totalPages, () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTransactionsTable();
+                    renderPagination();
+                }
+            });
+            pagination.appendChild(nextBtn);
+        }
+
+        // 페이지네이션 버튼 생성
+        function createPaginationButton(text, enabled, onClick, isActive = false) {
+            const btn = document.createElement('button');
+            btn.textContent = text;
+            btn.className = `px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition ${isActive ? 'bg-green-600 text-white' : 'hover:bg-gray-100'}`;
+            btn.disabled = !enabled;
+            if (!enabled) btn.className += ' opacity-50 cursor-not-allowed';
+            btn.onclick = onClick;
+            return btn;
+        }
+
+        // 테이블 정렬
+        function sortTable(field) {
+            if (currentSort.field === field) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.field = field;
+                currentSort.direction = 'desc';
+            }
+
+            // 정렬 아이콘 업데이트
+            document.querySelectorAll('[id^="sort-"]').forEach(el => {
+                el.textContent = '↕️';
+            });
+
+            const icon = currentSort.direction === 'asc' ? '↑' : '↓';
+            document.getElementById(`sort-${field}`).textContent = icon;
+
+            filterAndDisplayTransactions();
+        }
+
+        // 이벤트 리스너 설정
+        document.addEventListener('DOMContentLoaded', () => {
+            // 데이터 로드
+            loadData();
+
+            // 검색 입력
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                currentFilters.search = e.target.value;
+                filterAndDisplayTransactions();
+            });
+
+            // 타입 필터
+            document.getElementById('type-filter').addEventListener('change', (e) => {
+                currentFilters.type = e.target.value;
+                filterAndDisplayTransactions();
+            });
+        });
+    </script>
+</body>
+</html>
