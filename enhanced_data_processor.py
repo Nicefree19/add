@@ -76,6 +76,24 @@ def categorize_expense(description):
 
     return '기타 지출'
 
+def is_internal_transfer(transaction, all_transactions):
+    """계좌 간 내부 이체 여부 확인 (신한 → 카카오)"""
+    # 대체 거래는 내부 이체로 간주
+    if '대체' in transaction.get('description', ''):
+        return True
+
+    # 신한은행 출금과 카카오뱅크 입금이 같은 날짜에 같은 금액으로 발생한 경우
+    if transaction['bank'] == 'kakao_bank' and transaction['type'] == 'income':
+        # 같은 날짜에 신한은행에서 같은 금액의 출금이 있는지 확인
+        for t in all_transactions:
+            if (t['bank'] == 'shinhan_bank' and
+                t['type'] == 'expense' and
+                t['date'] == transaction['date'] and
+                abs(t['amount'] - transaction['amount']) < 100):  # 금액 오차 허용
+                return True
+
+    return False
+
 def categorize_income(description):
     """수입 카테고리 세분화"""
     desc_lower = description.lower()
@@ -93,9 +111,9 @@ def categorize_income(description):
     if '사우회' in description or '회비' in description:
         return '회비 납부'
 
-    # 대체
+    # 대체 (계좌 이동)
     if '대체' in description:
-        return '계좌 대체'
+        return '계좌 이동'
 
     # 카드 포인트/환급
     if '카드' in description:
@@ -104,7 +122,7 @@ def categorize_income(description):
     return '기타 수입'
 
 def analyze_member_contributions(transactions):
-    """회원별 회비 납부 분석"""
+    """회원별 회비 납부 분석 (내부 이체 제외)"""
     member_data = defaultdict(lambda: {
         'total_paid': 0,
         'payment_count': 0,
@@ -114,7 +132,9 @@ def analyze_member_contributions(transactions):
     })
 
     for t in transactions:
-        if t['type'] == 'income' and not t['is_safe_box']:
+        # 내부 이체와 세이프박스는 제외
+        is_internal = t.get('is_internal_transfer', False)
+        if t['type'] == 'income' and not t['is_safe_box'] and not is_internal:
             member = extract_member_name(t['description'])
             if member:
                 member_data[member]['total_paid'] += t['amount']
@@ -163,12 +183,13 @@ def analyze_expense_by_category(transactions):
     return dict(category_data)
 
 def analyze_monthly_trends(transactions):
-    """월별 상세 추이 분석"""
+    """월별 상세 추이 분석 (내부 이체 제외)"""
     monthly_data = defaultdict(lambda: {
         'income': 0,
         'expense': 0,
         'member_payments': 0,
         'member_payment_count': 0,
+        'internal_transfers': 0,
         'balance': 0
     })
 
@@ -178,6 +199,12 @@ def analyze_monthly_trends(transactions):
 
         date = t['date']
         year_month = date[:7]  # YYYY-MM
+        is_internal = t.get('is_internal_transfer', False)
+
+        # 내부 이체는 별도 카운트
+        if is_internal:
+            monthly_data[year_month]['internal_transfers'] += t['amount']
+            continue
 
         if t['type'] == 'income':
             monthly_data[year_month]['income'] += t['amount']
@@ -188,7 +215,7 @@ def analyze_monthly_trends(transactions):
         elif t['type'] == 'expense':
             monthly_data[year_month]['expense'] += t['amount']
 
-    # 월별 잔액 계산
+    # 월별 잔액 계산 (내부 이체 제외)
     sorted_months = sorted(monthly_data.keys())
     running_balance = 0
     for month in sorted_months:
@@ -210,8 +237,10 @@ def process_enhanced_data(input_file='dashboard_data.json', output_file='enhance
 
     transactions = data['transactions']
 
-    # 거래 데이터에 향상된 카테고리 추가
+    # 거래 데이터에 향상된 카테고리 추가 및 내부 이체 표시
     print("\n거래 데이터 재분류 중...")
+
+    # 1차: 카테고리 분류
     for t in transactions:
         if t['type'] == 'income':
             t['detailed_category'] = categorize_income(t['description'])
@@ -220,6 +249,19 @@ def process_enhanced_data(input_file='dashboard_data.json', output_file='enhance
                 t['member_name'] = member
         elif t['type'] == 'expense':
             t['detailed_category'] = categorize_expense(t['description'])
+
+    # 2차: 내부 이체 표시
+    print("내부 이체 거래 식별 중...")
+    internal_transfer_count = 0
+    for t in transactions:
+        if not t['is_safe_box']:
+            t['is_internal_transfer'] = is_internal_transfer(t, transactions)
+            if t['is_internal_transfer']:
+                internal_transfer_count += 1
+        else:
+            t['is_internal_transfer'] = False
+
+    print(f"  - 내부 이체 거래: {internal_transfer_count}건")
 
     # 회원별 분석
     print("회원별 회비 납부 분석 중...")

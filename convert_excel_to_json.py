@@ -193,29 +193,48 @@ def process_all_transactions(report_file, kakao_file):
 
     return transactions
 
+def is_internal_transfer(description):
+    """내부 이체 여부 확인 (계좌 간 이동)"""
+    # '대체' 거래는 내부 이체로 간주
+    return '대체' in description
+
 def calculate_summary(transactions):
-    """요약 통계 계산"""
+    """요약 통계 계산 (내부 이체 제외)"""
     total_income = 0
     total_expense = 0
     total_interest = 0
     kakao_balance = 0
     safebox_balance = 0
+    internal_transfer_count = 0
 
     for trans in transactions:
+        # 내부 이체 표시
+        trans['is_internal_transfer'] = is_internal_transfer(trans['description'])
+
         if trans['is_safe_box']:
             if trans['type'] == 'income':
                 safebox_balance += trans['amount']
             else:
                 safebox_balance -= trans['amount']
         else:
-            if trans['type'] == 'income':
-                total_income += trans['amount']
-                if trans['category'] == '이자':
-                    total_interest += trans['amount']
-                kakao_balance += trans['amount']
-            elif trans['type'] == 'expense':
-                total_expense += trans['amount']
-                kakao_balance -= trans['amount']
+            # 내부 이체는 수입/지출 통계에서 제외
+            if trans['is_internal_transfer']:
+                internal_transfer_count += 1
+                # 잔액에는 반영
+                if trans['type'] == 'income':
+                    kakao_balance += trans['amount']
+                elif trans['type'] == 'expense':
+                    kakao_balance -= trans['amount']
+            else:
+                # 실제 수입/지출만 통계에 포함
+                if trans['type'] == 'income':
+                    total_income += trans['amount']
+                    if trans['category'] == '이자':
+                        total_interest += trans['amount']
+                    kakao_balance += trans['amount']
+                elif trans['type'] == 'expense':
+                    total_expense += trans['amount']
+                    kakao_balance -= trans['amount']
 
     # 마지막 거래의 잔액 사용
     kakao_transactions = [t for t in transactions if not t['is_safe_box']]
@@ -226,6 +245,8 @@ def calculate_summary(transactions):
     if safebox_transactions:
         safebox_balance = safebox_transactions[-1]['balance_after']
 
+    print(f"\n내부 이체 거래: {internal_transfer_count}건 (통계에서 제외)")
+
     return {
         'total_income': total_income,
         'total_expense': total_expense,
@@ -233,7 +254,8 @@ def calculate_summary(transactions):
         'kakao_balance': kakao_balance,
         'safebox_balance': safebox_balance,
         'total_balance': kakao_balance + safebox_balance,
-        'total_transactions': len(transactions)
+        'total_transactions': len(transactions),
+        'internal_transfers': internal_transfer_count
     }
 
 def create_dashboard_data(transactions, summary):
