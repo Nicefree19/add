@@ -108,9 +108,60 @@ def determine_category(row):
 
     return '기타'
 
-def process_all_transactions(report_file, kakao_file):
+def load_shinhan_depositor_names(shinhan_file):
+    """신한은행 파일에서 실제 입금자명 읽기"""
+    print("\n신한은행 입금자명 로딩 중...")
+    try:
+        # skiprows=6: 헤더는 row 6에 있고 데이터는 row 7부터 시작
+        df_shinhan = pd.read_excel(shinhan_file, skiprows=6)
+
+        # 입금자명 매핑 딕셔너리 생성: (날짜, 금액) -> 입금자명
+        depositor_map = {}
+
+        for idx, row in df_shinhan.iterrows():
+            if pd.isna(row['거래일자']):
+                continue
+
+            # 날짜 변환
+            date_str = str(row['거래일자'])
+            if isinstance(row['거래일자'], datetime):
+                date = row['거래일자'].strftime('%Y-%m-%d')
+            else:
+                # "2025-11-06" 형식
+                date = parse_date(date_str)
+
+            # 입금액 (입금이 있는 경우만)
+            deposit = clean_currency(row['입금(원)'])
+            # 출금액
+            withdrawal = clean_currency(row['출금(원)'])
+
+            # 입금자명
+            depositor = str(row['내용']).strip() if not pd.isna(row['내용']) else ''
+
+            # 입금 거래 매핑
+            if deposit > 0:
+                key = (date, deposit)
+                depositor_map[key] = depositor
+
+            # 출금 거래도 매핑 (대체 등)
+            if withdrawal > 0:
+                key = (date, withdrawal)
+                depositor_map[key] = depositor
+
+        print(f"  - 신한은행 입금자명 {len(depositor_map)}건 로드 완료")
+        return depositor_map
+    except Exception as e:
+        print(f"  - 신한은행 파일 로드 실패: {e}")
+        return {}
+
+def process_all_transactions(report_file, kakao_file, shinhan_file=None):
     """모든 거래 내역 처리"""
     transactions = []
+
+    # 신한은행 입금자명 로드
+    depositor_map = {}
+    if shinhan_file:
+        depositor_map = load_shinhan_depositor_names(shinhan_file)
 
     # 1. 결산 보고서에서 전체 거래 내역 읽기
     print("\n전체 거래 내역 처리 중...")
@@ -134,6 +185,16 @@ def process_all_transactions(report_file, kakao_file):
             'bank': 'shinhan_bank' if '신한' in str(row.get('은행', '')) else 'kakao_bank',
             'is_safe_box': False
         }
+
+        # 신한은행 거래인 경우 실제 입금자명 추가
+        if trans['bank'] == 'shinhan_bank':
+            key = (trans['date'], trans['amount'])
+            if key in depositor_map:
+                trans['depositor_name'] = depositor_map[key]
+            else:
+                trans['depositor_name'] = ''
+        else:
+            trans['depositor_name'] = ''
 
         trans['type'] = determine_transaction_type({'구분': row['구분'], 'amount': amount, '내용': trans['description']})
         trans['category'] = determine_category(trans)
@@ -193,29 +254,48 @@ def process_all_transactions(report_file, kakao_file):
 
     return transactions
 
+def is_internal_transfer(description):
+    """내부 이체 여부 확인 (계좌 간 이동)"""
+    # '대체' 거래는 내부 이체로 간주
+    return '대체' in description
+
 def calculate_summary(transactions):
-    """요약 통계 계산"""
+    """요약 통계 계산 (내부 이체 제외)"""
     total_income = 0
     total_expense = 0
     total_interest = 0
     kakao_balance = 0
     safebox_balance = 0
+    internal_transfer_count = 0
 
     for trans in transactions:
+        # 내부 이체 표시
+        trans['is_internal_transfer'] = is_internal_transfer(trans['description'])
+
         if trans['is_safe_box']:
             if trans['type'] == 'income':
                 safebox_balance += trans['amount']
             else:
                 safebox_balance -= trans['amount']
         else:
-            if trans['type'] == 'income':
-                total_income += trans['amount']
-                if trans['category'] == '이자':
-                    total_interest += trans['amount']
-                kakao_balance += trans['amount']
-            elif trans['type'] == 'expense':
-                total_expense += trans['amount']
-                kakao_balance -= trans['amount']
+            # 내부 이체는 수입/지출 통계에서 제외
+            if trans['is_internal_transfer']:
+                internal_transfer_count += 1
+                # 잔액에는 반영
+                if trans['type'] == 'income':
+                    kakao_balance += trans['amount']
+                elif trans['type'] == 'expense':
+                    kakao_balance -= trans['amount']
+            else:
+                # 실제 수입/지출만 통계에 포함
+                if trans['type'] == 'income':
+                    total_income += trans['amount']
+                    if trans['category'] == '이자':
+                        total_interest += trans['amount']
+                    kakao_balance += trans['amount']
+                elif trans['type'] == 'expense':
+                    total_expense += trans['amount']
+                    kakao_balance -= trans['amount']
 
     # 마지막 거래의 잔액 사용
     kakao_transactions = [t for t in transactions if not t['is_safe_box']]
@@ -226,6 +306,8 @@ def calculate_summary(transactions):
     if safebox_transactions:
         safebox_balance = safebox_transactions[-1]['balance_after']
 
+    print(f"\n내부 이체 거래: {internal_transfer_count}건 (통계에서 제외)")
+
     return {
         'total_income': total_income,
         'total_expense': total_expense,
@@ -233,7 +315,8 @@ def calculate_summary(transactions):
         'kakao_balance': kakao_balance,
         'safebox_balance': safebox_balance,
         'total_balance': kakao_balance + safebox_balance,
-        'total_transactions': len(transactions)
+        'total_transactions': len(transactions),
+        'internal_transfers': internal_transfer_count
     }
 
 def create_dashboard_data(transactions, summary):
@@ -270,10 +353,11 @@ def main():
     # 파일 경로
     report_file = "사우회_회비_결산_보고서_최종.xlsx"
     kakao_file = "251111_사우회회비 통장 거래 내역(카카오뱅크계좌).xlsx"
+    shinhan_file = "신한은행_거래내역조회_20251111111910.xls"
     output_file = "dashboard_data.json"
 
     # 거래 내역 처리
-    transactions = process_all_transactions(report_file, kakao_file)
+    transactions = process_all_transactions(report_file, kakao_file, shinhan_file)
 
     # 요약 통계 계산
     summary = calculate_summary(transactions)
