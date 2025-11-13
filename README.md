@@ -110,6 +110,36 @@ python3 enhanced_data_processor.py
 - Safari
 - Edge
 
+## 🌐 GitHub Pages로 배포하기
+
+이 대시보드를 GitHub Pages로 호스팅하여 온라인에서 바로 사용할 수 있습니다.
+
+### 빠른 설정 (3단계)
+
+1. **GitHub 저장소 Settings로 이동**
+   - `https://github.com/Nicefree19/add/settings/pages`
+
+2. **GitHub Pages 활성화**
+   - Source: "Deploy from a branch" 선택
+   - Branch: `main` 브랜치, `/ (root)` 폴더 선택
+   - "Save" 클릭
+
+3. **접속**
+   - 배포 완료 후 (약 1-5분) 다음 URL에서 접속:
+   - **`https://nicefree19.github.io/add/`**
+
+### 상세 가이드
+
+자세한 설정 방법은 [GITHUB_PAGES_SETUP.md](GITHUB_PAGES_SETUP.md) 문서를 참고하세요.
+
+### 배포 후 URL 구조
+
+- 메인 대시보드: `https://nicefree19.github.io/add/`
+- 회원 관리: `https://nicefree19.github.io/add/members.html`
+- 지출 분석: `https://nicefree19.github.io/add/expenses.html`
+- 세이프박스: `https://nicefree19.github.io/add/safebox.html`
+- 데이터 업로드: `https://nicefree19.github.io/add/excel_loader.html`
+
 ## 라이선스
 
 MIT License
