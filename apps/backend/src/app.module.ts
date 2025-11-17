@@ -8,6 +8,7 @@ import { ElectionModule } from './election/election.module';
 import { RecommendModule } from './recommend/recommend.module';
 import { CandidateModule } from './candidate/candidate.module';
 import { VoteModule } from './vote/vote.module';
+import { HealthModule } from './health/health.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -30,6 +31,7 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
  * - RecommendModule: 후보 추천 관리
  * - CandidateModule: 후보 관리
  * - VoteModule: 투표 및 결과 조회
+ * - HealthModule: 헬스 체크 (모니터링, 로드밸런서, Kubernetes 프로브)
  */
 @Module({
   imports: [
@@ -54,6 +56,7 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
     RecommendModule,
     CandidateModule,
     VoteModule,
+    HealthModule,
   ],
   providers: [
     // 전역 Guards (순서 중요: ThrottlerGuard -> JwtAuthGuard -> RolesGuard)
