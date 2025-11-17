@@ -38,10 +38,11 @@ enum ElectionRole {
 }
 
 enum CandidateStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  WITHDRAWN
+  PENDING     // 추천으로 생성됨 (아직 초대 전)
+  INVITED     // 관리자가 후보로 초대함
+  ACCEPTED    // 후보가 수락함
+  DECLINED    // 후보가 거절함
+  WITHDRAWN   // 후보가 사퇴함
 }
 
 // ============================================================================
