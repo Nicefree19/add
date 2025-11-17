@@ -287,6 +287,14 @@ export class VoteService {
       );
     }
 
+    // 보안: 선거가 CLOSED 상태일 때만 결과 조회 가능
+    if (election.status !== PrismaElectionStatus.CLOSED) {
+      throw new BusinessException(
+        ErrorCode.ELECTION_NOT_CLOSED,
+        '선거가 종료된 후에만 결과를 조회할 수 있습니다.',
+      );
+    }
+
     // 전체 유권자 수 (활성 사용자 수)
     const totalEligibleVoters = await this.prisma.user.count({
       where: { isActive: true },
@@ -395,6 +403,14 @@ export class VoteService {
       throw new BusinessException(
         ErrorCode.ELECTION_NOT_FOUND,
         '선거를 찾을 수 없습니다.',
+      );
+    }
+
+    // 보안: 선거가 CLOSED 상태일 때만 결과 조회 가능 (관리자/감사도 투표 중에는 조회 불가)
+    if (election.status !== PrismaElectionStatus.CLOSED) {
+      throw new BusinessException(
+        ErrorCode.ELECTION_NOT_CLOSED,
+        '선거가 종료된 후에만 결과를 조회할 수 있습니다.',
       );
     }
 

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClient } from '@prisma/client';
+import { randomInt } from 'crypto';
 import { ErrorCode } from '../common/constants/error-codes';
 import { BusinessException } from '../common/exceptions/business.exception';
 import {
@@ -295,10 +296,14 @@ export class AuthService {
   /**
    * 6자리 랜덤 OTP 코드 생성
    *
+   * 보안: crypto.randomInt() 사용으로 암호학적으로 안전한 난수 생성
+   *
    * @returns 6자리 숫자 문자열
    */
   private generateOtpCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    // randomInt(min, max)는 min 이상 max 미만의 난수 생성
+    // 100000 ~ 999999 범위의 6자리 숫자
+    return randomInt(100000, 1000000).toString();
   }
 
   /**
