@@ -14,10 +14,27 @@ async function bootstrap() {
   });
 
   // CORS 활성화 (프론트엔드와의 통신을 위해)
+  // 보안: 프로덕션에서는 정확한 도메인만 허용
+  const corsOrigin = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
+    : process.env.NODE_ENV === 'production'
+    ? [] // 프로덕션에서 CORS_ORIGIN 미설정 시 모든 요청 차단
+    : ['http://localhost:3001', 'http://localhost:3000']; // 개발 환경 기본값
+
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || '*', // 프로덕션에서는 특정 도메인으로 제한
+    origin: corsOrigin,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 3600, // Preflight 요청 캐싱 시간 (1시간)
   });
+
+  if (process.env.NODE_ENV === 'production' && corsOrigin.length === 0) {
+    logger.warn(
+      '⚠️  WARNING: CORS_ORIGIN not set in production. All cross-origin requests will be blocked!',
+    );
+  }
 
   // 전역 Validation Pipe 설정
   app.useGlobalPipes(
