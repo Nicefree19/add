@@ -46,7 +46,7 @@ export class AuthService {
 
   // OTP 설정
   private readonly OTP_LENGTH = 6;
-  private readonly OTP_EXPIRY_MINUTES = 5; // OTP 유효 시간 5분
+  private readonly OTP_EXPIRY_MINUTES = 3; // 보안: OTP 유효 시간 3분 (이전 5분에서 단축)
 
   constructor(private readonly jwtService: JwtService) {
     this.prisma = new PrismaClient();
@@ -86,10 +86,26 @@ export class AuthService {
       );
     }
 
-    // 2. 6자리 OTP 생성
+    // 2. 보안: 기존 미사용 OTP 무효화 (OTP 재사용 방지)
+    await this.prisma.otpToken.updateMany({
+      where: {
+        userId: user.id,
+        purpose: 'login',
+        isUsed: false,
+        expiresAt: {
+          gte: new Date(), // 아직 만료되지 않은 OTP만
+        },
+      },
+      data: {
+        isUsed: true,
+        usedAt: new Date(),
+      },
+    });
+
+    // 3. 6자리 OTP 생성
     const otpCode = this.generateOtpCode();
 
-    // 3. OTP 토큰 DB 저장
+    // 4. OTP 토큰 DB 저장
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + this.OTP_EXPIRY_MINUTES);
 
