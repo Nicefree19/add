@@ -82,11 +82,14 @@ export class AuditService {
 
   /**
    * 투표 기록
+   *
+   * 보안: candidateId를 로그에 포함하지 않음 (투표 익명성 보장)
+   * userId와 electionId만 기록하여 중복 투표 감지 및 감사 목적으로 사용
    */
   async logVote(
     userId: string,
     electionId: string,
-    candidateId: string,
+    role: string,
     ipAddress: string,
     userAgent: string,
   ) {
@@ -98,7 +101,7 @@ export class AuditService {
       resource: `election:${electionId}`,
       metadata: {
         electionId,
-        candidateId,
+        role, // 어떤 역할에 투표했는지만 기록 (후보는 기록하지 않음)
       },
       statusCode: 201,
     });
