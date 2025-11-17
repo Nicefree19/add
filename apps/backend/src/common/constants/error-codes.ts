@@ -1,0 +1,209 @@
+/**
+ * 에러 코드 정의
+ * Prefix 규칙:
+ * - AUTH_*: 인증/인가 관련
+ * - USER_*: 사용자 관련
+ * - ELECTION_*: 선거 관련
+ * - VOTE_*: 투표 관련
+ * - RECOMMEND_*: 추천 관련
+ * - CANDIDATE_*: 후보 관련
+ * - SYSTEM_*: 시스템/일반 에러
+ */
+
+export enum ErrorCode {
+  // ==================== AUTH Errors ====================
+  AUTH_UNAUTHORIZED = 'AUTH_UNAUTHORIZED',
+  AUTH_INVALID_TOKEN = 'AUTH_INVALID_TOKEN',
+  AUTH_TOKEN_EXPIRED = 'AUTH_TOKEN_EXPIRED',
+  AUTH_FORBIDDEN = 'AUTH_FORBIDDEN',
+  AUTH_INVALID_CREDENTIALS = 'AUTH_INVALID_CREDENTIALS',
+  AUTH_OTP_INVALID = 'AUTH_OTP_INVALID',
+  AUTH_OTP_EXPIRED = 'AUTH_OTP_EXPIRED',
+  AUTH_OTP_ALREADY_USED = 'AUTH_OTP_ALREADY_USED',
+
+  // ==================== USER Errors ====================
+  USER_NOT_FOUND = 'USER_NOT_FOUND',
+  USER_ALREADY_EXISTS = 'USER_ALREADY_EXISTS',
+  USER_EMAIL_DUPLICATE = 'USER_EMAIL_DUPLICATE',
+  USER_EMPLOYEE_NO_DUPLICATE = 'USER_EMPLOYEE_NO_DUPLICATE',
+  USER_INACTIVE = 'USER_INACTIVE',
+  USER_INVALID_ROLE = 'USER_INVALID_ROLE',
+
+  // ==================== ELECTION Errors ====================
+  ELECTION_NOT_FOUND = 'ELECTION_NOT_FOUND',
+  ELECTION_ALREADY_EXISTS = 'ELECTION_ALREADY_EXISTS',
+  ELECTION_INVALID_STATUS = 'ELECTION_INVALID_STATUS',
+  ELECTION_NOT_IN_RECOMMENDATION_PERIOD = 'ELECTION_NOT_IN_RECOMMENDATION_PERIOD',
+  ELECTION_NOT_IN_VOTING_PERIOD = 'ELECTION_NOT_IN_VOTING_PERIOD',
+  ELECTION_ALREADY_COMPLETED = 'ELECTION_ALREADY_COMPLETED',
+  ELECTION_INVALID_DATE_RANGE = 'ELECTION_INVALID_DATE_RANGE',
+
+  // ==================== RECOMMEND Errors ====================
+  RECOMMEND_NOT_FOUND = 'RECOMMEND_NOT_FOUND',
+  RECOMMEND_ALREADY_EXISTS = 'RECOMMEND_ALREADY_EXISTS',
+  RECOMMEND_DUPLICATE_FOR_ROLE = 'RECOMMEND_DUPLICATE_FOR_ROLE',
+  RECOMMEND_LIMIT_EXCEEDED = 'RECOMMEND_LIMIT_EXCEEDED',
+  RECOMMEND_SELF_NOT_ALLOWED = 'RECOMMEND_SELF_NOT_ALLOWED',
+  RECOMMEND_PERIOD_NOT_STARTED = 'RECOMMEND_PERIOD_NOT_STARTED',
+  RECOMMEND_PERIOD_ENDED = 'RECOMMEND_PERIOD_ENDED',
+
+  // ==================== CANDIDATE Errors ====================
+  CANDIDATE_NOT_FOUND = 'CANDIDATE_NOT_FOUND',
+  CANDIDATE_ALREADY_EXISTS = 'CANDIDATE_ALREADY_EXISTS',
+  CANDIDATE_DUPLICATE_FOR_ROLE = 'CANDIDATE_DUPLICATE_FOR_ROLE',
+  CANDIDATE_NOT_APPROVED = 'CANDIDATE_NOT_APPROVED',
+  CANDIDATE_WITHDRAWN = 'CANDIDATE_WITHDRAWN',
+  CANDIDATE_INVALID_STATUS = 'CANDIDATE_INVALID_STATUS',
+
+  // ==================== VOTE Errors ====================
+  VOTE_NOT_FOUND = 'VOTE_NOT_FOUND',
+  VOTE_ALREADY_EXISTS = 'VOTE_ALREADY_EXISTS',
+  VOTE_DUPLICATE_FOR_ROLE = 'VOTE_DUPLICATE_FOR_ROLE',
+  VOTE_PERIOD_NOT_STARTED = 'VOTE_PERIOD_NOT_STARTED',
+  VOTE_PERIOD_ENDED = 'VOTE_PERIOD_ENDED',
+  VOTE_INVALID_CANDIDATE = 'VOTE_INVALID_CANDIDATE',
+  VOTE_SELF_NOT_ALLOWED = 'VOTE_SELF_NOT_ALLOWED',
+
+  // ==================== SYSTEM Errors ====================
+  SYSTEM_INTERNAL_ERROR = 'SYSTEM_INTERNAL_ERROR',
+  SYSTEM_BAD_REQUEST = 'SYSTEM_BAD_REQUEST',
+  SYSTEM_VALIDATION_ERROR = 'SYSTEM_VALIDATION_ERROR',
+  SYSTEM_NOT_FOUND = 'SYSTEM_NOT_FOUND',
+  SYSTEM_CONFLICT = 'SYSTEM_CONFLICT',
+  SYSTEM_DATABASE_ERROR = 'SYSTEM_DATABASE_ERROR',
+}
+
+/**
+ * 에러 코드별 기본 메시지
+ */
+export const ErrorMessages: Record<ErrorCode, string> = {
+  // AUTH
+  [ErrorCode.AUTH_UNAUTHORIZED]: '인증되지 않은 사용자입니다.',
+  [ErrorCode.AUTH_INVALID_TOKEN]: '유효하지 않은 토큰입니다.',
+  [ErrorCode.AUTH_TOKEN_EXPIRED]: '토큰이 만료되었습니다.',
+  [ErrorCode.AUTH_FORBIDDEN]: '접근 권한이 없습니다.',
+  [ErrorCode.AUTH_INVALID_CREDENTIALS]: '잘못된 인증 정보입니다.',
+  [ErrorCode.AUTH_OTP_INVALID]: '유효하지 않은 OTP 코드입니다.',
+  [ErrorCode.AUTH_OTP_EXPIRED]: 'OTP 코드가 만료되었습니다.',
+  [ErrorCode.AUTH_OTP_ALREADY_USED]: '이미 사용된 OTP 코드입니다.',
+
+  // USER
+  [ErrorCode.USER_NOT_FOUND]: '사용자를 찾을 수 없습니다.',
+  [ErrorCode.USER_ALREADY_EXISTS]: '이미 존재하는 사용자입니다.',
+  [ErrorCode.USER_EMAIL_DUPLICATE]: '이미 사용 중인 이메일입니다.',
+  [ErrorCode.USER_EMPLOYEE_NO_DUPLICATE]: '이미 등록된 사번입니다.',
+  [ErrorCode.USER_INACTIVE]: '비활성화된 사용자입니다.',
+  [ErrorCode.USER_INVALID_ROLE]: '유효하지 않은 사용자 역할입니다.',
+
+  // ELECTION
+  [ErrorCode.ELECTION_NOT_FOUND]: '선거를 찾을 수 없습니다.',
+  [ErrorCode.ELECTION_ALREADY_EXISTS]: '이미 존재하는 선거입니다.',
+  [ErrorCode.ELECTION_INVALID_STATUS]: '유효하지 않은 선거 상태입니다.',
+  [ErrorCode.ELECTION_NOT_IN_RECOMMENDATION_PERIOD]:
+    '추천 기간이 아닙니다.',
+  [ErrorCode.ELECTION_NOT_IN_VOTING_PERIOD]: '투표 기간이 아닙니다.',
+  [ErrorCode.ELECTION_ALREADY_COMPLETED]: '이미 완료된 선거입니다.',
+  [ErrorCode.ELECTION_INVALID_DATE_RANGE]: '유효하지 않은 날짜 범위입니다.',
+
+  // RECOMMEND
+  [ErrorCode.RECOMMEND_NOT_FOUND]: '추천을 찾을 수 없습니다.',
+  [ErrorCode.RECOMMEND_ALREADY_EXISTS]: '이미 추천한 내역이 있습니다.',
+  [ErrorCode.RECOMMEND_DUPLICATE_FOR_ROLE]:
+    '해당 역할에 대해 이미 추천했습니다.',
+  [ErrorCode.RECOMMEND_LIMIT_EXCEEDED]: '최대 추천 가능 횟수를 초과했습니다.',
+  [ErrorCode.RECOMMEND_SELF_NOT_ALLOWED]: '자기 자신을 추천할 수 없습니다.',
+  [ErrorCode.RECOMMEND_PERIOD_NOT_STARTED]: '추천 기간이 시작되지 않았습니다.',
+  [ErrorCode.RECOMMEND_PERIOD_ENDED]: '추천 기간이 종료되었습니다.',
+
+  // CANDIDATE
+  [ErrorCode.CANDIDATE_NOT_FOUND]: '후보를 찾을 수 없습니다.',
+  [ErrorCode.CANDIDATE_ALREADY_EXISTS]: '이미 등록된 후보입니다.',
+  [ErrorCode.CANDIDATE_DUPLICATE_FOR_ROLE]:
+    '해당 역할에 이미 출마했습니다.',
+  [ErrorCode.CANDIDATE_NOT_APPROVED]: '승인되지 않은 후보입니다.',
+  [ErrorCode.CANDIDATE_WITHDRAWN]: '사퇴한 후보입니다.',
+  [ErrorCode.CANDIDATE_INVALID_STATUS]: '유효하지 않은 후보 상태입니다.',
+
+  // VOTE
+  [ErrorCode.VOTE_NOT_FOUND]: '투표를 찾을 수 없습니다.',
+  [ErrorCode.VOTE_ALREADY_EXISTS]: '이미 투표한 내역이 있습니다.',
+  [ErrorCode.VOTE_DUPLICATE_FOR_ROLE]: '해당 역할에 대해 이미 투표했습니다.',
+  [ErrorCode.VOTE_PERIOD_NOT_STARTED]: '투표 기간이 시작되지 않았습니다.',
+  [ErrorCode.VOTE_PERIOD_ENDED]: '투표 기간이 종료되었습니다.',
+  [ErrorCode.VOTE_INVALID_CANDIDATE]: '유효하지 않은 후보입니다.',
+  [ErrorCode.VOTE_SELF_NOT_ALLOWED]: '자기 자신에게 투표할 수 없습니다.',
+
+  // SYSTEM
+  [ErrorCode.SYSTEM_INTERNAL_ERROR]: '서버 내부 오류가 발생했습니다.',
+  [ErrorCode.SYSTEM_BAD_REQUEST]: '잘못된 요청입니다.',
+  [ErrorCode.SYSTEM_VALIDATION_ERROR]: '입력값 검증에 실패했습니다.',
+  [ErrorCode.SYSTEM_NOT_FOUND]: '요청한 리소스를 찾을 수 없습니다.',
+  [ErrorCode.SYSTEM_CONFLICT]: '요청이 현재 상태와 충돌합니다.',
+  [ErrorCode.SYSTEM_DATABASE_ERROR]: '데이터베이스 오류가 발생했습니다.',
+};
+
+/**
+ * HTTP 상태 코드 매핑
+ */
+export const ErrorCodeToHttpStatus: Record<ErrorCode, number> = {
+  // AUTH - 401 Unauthorized, 403 Forbidden
+  [ErrorCode.AUTH_UNAUTHORIZED]: 401,
+  [ErrorCode.AUTH_INVALID_TOKEN]: 401,
+  [ErrorCode.AUTH_TOKEN_EXPIRED]: 401,
+  [ErrorCode.AUTH_FORBIDDEN]: 403,
+  [ErrorCode.AUTH_INVALID_CREDENTIALS]: 401,
+  [ErrorCode.AUTH_OTP_INVALID]: 401,
+  [ErrorCode.AUTH_OTP_EXPIRED]: 401,
+  [ErrorCode.AUTH_OTP_ALREADY_USED]: 401,
+
+  // USER - 404 Not Found, 409 Conflict, 400 Bad Request
+  [ErrorCode.USER_NOT_FOUND]: 404,
+  [ErrorCode.USER_ALREADY_EXISTS]: 409,
+  [ErrorCode.USER_EMAIL_DUPLICATE]: 409,
+  [ErrorCode.USER_EMPLOYEE_NO_DUPLICATE]: 409,
+  [ErrorCode.USER_INACTIVE]: 403,
+  [ErrorCode.USER_INVALID_ROLE]: 400,
+
+  // ELECTION - 404, 400, 409
+  [ErrorCode.ELECTION_NOT_FOUND]: 404,
+  [ErrorCode.ELECTION_ALREADY_EXISTS]: 409,
+  [ErrorCode.ELECTION_INVALID_STATUS]: 400,
+  [ErrorCode.ELECTION_NOT_IN_RECOMMENDATION_PERIOD]: 400,
+  [ErrorCode.ELECTION_NOT_IN_VOTING_PERIOD]: 400,
+  [ErrorCode.ELECTION_ALREADY_COMPLETED]: 400,
+  [ErrorCode.ELECTION_INVALID_DATE_RANGE]: 400,
+
+  // RECOMMEND - 404, 409, 400
+  [ErrorCode.RECOMMEND_NOT_FOUND]: 404,
+  [ErrorCode.RECOMMEND_ALREADY_EXISTS]: 409,
+  [ErrorCode.RECOMMEND_DUPLICATE_FOR_ROLE]: 409,
+  [ErrorCode.RECOMMEND_LIMIT_EXCEEDED]: 400,
+  [ErrorCode.RECOMMEND_SELF_NOT_ALLOWED]: 400,
+  [ErrorCode.RECOMMEND_PERIOD_NOT_STARTED]: 400,
+  [ErrorCode.RECOMMEND_PERIOD_ENDED]: 400,
+
+  // CANDIDATE - 404, 409, 400
+  [ErrorCode.CANDIDATE_NOT_FOUND]: 404,
+  [ErrorCode.CANDIDATE_ALREADY_EXISTS]: 409,
+  [ErrorCode.CANDIDATE_DUPLICATE_FOR_ROLE]: 409,
+  [ErrorCode.CANDIDATE_NOT_APPROVED]: 400,
+  [ErrorCode.CANDIDATE_WITHDRAWN]: 400,
+  [ErrorCode.CANDIDATE_INVALID_STATUS]: 400,
+
+  // VOTE - 404, 409, 400
+  [ErrorCode.VOTE_NOT_FOUND]: 404,
+  [ErrorCode.VOTE_ALREADY_EXISTS]: 409,
+  [ErrorCode.VOTE_DUPLICATE_FOR_ROLE]: 409,
+  [ErrorCode.VOTE_PERIOD_NOT_STARTED]: 400,
+  [ErrorCode.VOTE_PERIOD_ENDED]: 400,
+  [ErrorCode.VOTE_INVALID_CANDIDATE]: 400,
+  [ErrorCode.VOTE_SELF_NOT_ALLOWED]: 400,
+
+  // SYSTEM - 500, 400, 404, 409
+  [ErrorCode.SYSTEM_INTERNAL_ERROR]: 500,
+  [ErrorCode.SYSTEM_BAD_REQUEST]: 400,
+  [ErrorCode.SYSTEM_VALIDATION_ERROR]: 400,
+  [ErrorCode.SYSTEM_NOT_FOUND]: 404,
+  [ErrorCode.SYSTEM_CONFLICT]: 409,
+  [ErrorCode.SYSTEM_DATABASE_ERROR]: 500,
+};
