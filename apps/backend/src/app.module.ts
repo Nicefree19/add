@@ -4,6 +4,7 @@ import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { ElectionModule } from './election/election.module';
+import { RecommendModule } from './recommend/recommend.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -22,6 +23,7 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
  * - AuthModule: 인증 및 인가
  * - UserModule: 사용자 관리
  * - ElectionModule: 선거 관리
+ * - RecommendModule: 후보 추천 관리
  */
 @Module({
   imports: [
@@ -35,6 +37,7 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
     AuthModule,
     UserModule,
     ElectionModule,
+    RecommendModule,
   ],
   providers: [
     // 전역 Guards
