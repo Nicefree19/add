@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Vote,
   Users,
+  FileText,
   Settings
 } from 'lucide-react';
 
@@ -30,13 +31,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       href: '/admin/users',
       icon: Users,
     },
+    {
+      title: '액세스 로그',
+      href: '/admin/logs',
+      icon: FileText,
+    },
   ];
 
   return (
     <AdminGuard>
-      <div className="flex gap-6">
-        {/* 사이드바 */}
-        <aside className="w-64 bg-white rounded-lg shadow p-4 space-y-2 sticky top-6 h-fit">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* 모바일: 상단 드롭다운 네비게이션 */}
+        <nav className="lg:hidden bg-white rounded-lg shadow p-4">
+          <select
+            value={pathname || '/admin'}
+            onChange={(e) => window.location.href = e.target.value}
+            className="w-full px-3 py-2 border rounded-md text-sm"
+          >
+            {navItems.map((item) => (
+              <option key={item.href} value={item.href}>
+                {item.title}
+              </option>
+            ))}
+          </select>
+        </nav>
+
+        {/* 데스크톱: 사이드바 */}
+        <aside className="hidden lg:block w-64 bg-white rounded-lg shadow p-4 space-y-2 sticky top-6 h-fit">
           <div className="px-3 py-2 mb-4">
             <h2 className="text-lg font-bold text-gray-800">관리자</h2>
             <p className="text-sm text-gray-500">Admin Panel</p>
@@ -65,7 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </aside>
 
         {/* 메인 컨텐츠 */}
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           {children}
         </main>
       </div>
