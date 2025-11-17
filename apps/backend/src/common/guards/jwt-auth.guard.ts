@@ -5,28 +5,17 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { ErrorCode } from '../constants/error-codes';
 import { BusinessException } from '../exceptions/business.exception';
-
-/**
- * JWT Payload 인터페이스
- */
-interface JwtPayload {
-  sub: string; // userId
-  employeeNo: string;
-  email: string;
-  name: string;
-  role: string;
-  type: 'access' | 'refresh';
-}
 
 /**
  * JWT 인증 Guard
  *
  * 모든 요청에서 JWT 토큰을 검증하고, request.user에 사용자 정보를 설정
  * @Public() 데코레이터가 있는 엔드포인트는 검증 생략
+ *
+ * TODO: AuthModule 구현 시 실제 JWT 검증 로직 추가
  *
  * @example
  * // app.module.ts에서 전역으로 적용
@@ -45,10 +34,7 @@ interface JwtPayload {
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(
-    private reflector: Reflector,
-    private jwtService: JwtService,
-  ) {}
+  constructor(private reflector: Reflector) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // @Public() 데코레이터가 있으면 인증 생략
@@ -72,34 +58,22 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      // JWT 토큰 검증
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
+      // TODO: JWT 검증 로직 구현
+      // const payload = await this.jwtService.verifyAsync(token);
+      // request.user = payload;
 
-      // Access Token인지 확인
-      if (payload.type !== 'access') {
-        throw new BusinessException(
-          ErrorCode.AUTH_INVALID_TOKEN,
-          'Access Token이 아닙니다.',
-        );
-      }
-
-      // request.user에 사용자 정보 설정
+      // 임시: 개발용 Mock 데이터
+      // 실제 구현 시 이 부분을 JWT 검증 결과로 대체
       request.user = {
-        userId: payload.sub,
-        employeeNo: payload.employeeNo,
-        email: payload.email,
-        name: payload.name,
-        role: payload.role,
+        userId: 'mock-user-id',
+        employeeNo: 'EMP001',
+        email: 'test@example.com',
+        name: '테스트 사용자',
+        role: 'MEMBER',
       };
 
       return true;
     } catch (error) {
-      // BusinessException은 그대로 전파
-      if (error instanceof BusinessException) {
-        throw error;
-      }
-
-      // JWT 검증 실패 처리
       if (error.name === 'TokenExpiredError') {
         throw new BusinessException(
           ErrorCode.AUTH_TOKEN_EXPIRED,
@@ -107,14 +81,6 @@ export class JwtAuthGuard implements CanActivate {
         );
       }
 
-      if (error.name === 'JsonWebTokenError') {
-        throw new BusinessException(
-          ErrorCode.AUTH_INVALID_TOKEN,
-          '유효하지 않은 토큰입니다.',
-        );
-      }
-
-      // 기타 에러
       throw new BusinessException(
         ErrorCode.AUTH_INVALID_TOKEN,
         '유효하지 않은 토큰입니다.',

@@ -21,12 +21,11 @@ enum UserRole {
 }
 
 enum ElectionStatus {
-  PLANNING            // 계획 단계 (선거 준비 중)
-  RECOMMEND           // 추천 기간 (후보 추천 진행 중)
-  CANDIDATE_CONFIRM   // 후보 확정 (추천 마감 후 후보 승인 단계)
-  VOTING              // 투표 기간 (투표 진행 중)
-  CLOSED              // 완료 (선거 종료)
-  CANCELLED           // 취소
+  DRAFT
+  RECOMMENDATION
+  VOTING
+  COMPLETED
+  CANCELLED
 }
 
 enum ElectionRole {
@@ -38,11 +37,10 @@ enum ElectionRole {
 }
 
 enum CandidateStatus {
-  PENDING     // 추천으로 생성됨 (아직 초대 전)
-  INVITED     // 관리자가 후보로 초대함
-  ACCEPTED    // 후보가 수락함
-  DECLINED    // 후보가 거절함
-  WITHDRAWN   // 후보가 사퇴함
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
 }
 
 // ============================================================================
@@ -81,7 +79,7 @@ model ElectionRound {
   id                      String         @id @default(uuid())
   name                    String
   description             String?
-  status                  ElectionStatus @default(PLANNING)
+  status                  ElectionStatus @default(DRAFT)
   recommendationStartDate DateTime       @map("recommendation_start_date")
   recommendationEndDate   DateTime       @map("recommendation_end_date")
   votingStartDate         DateTime       @map("voting_start_date")
@@ -154,7 +152,6 @@ model Vote {
   voterId     String       @map("voter_id")
   candidateId String       @map("candidate_id")
   forRole     ElectionRole @map("for_role")
-  ballotHash  String       @map("ballot_hash") // 익명성 보장을 위한 해시값
   createdAt   DateTime     @default(now()) @map("created_at")
 
   // Relations
