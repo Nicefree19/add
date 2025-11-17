@@ -21,11 +21,12 @@ enum UserRole {
 }
 
 enum ElectionStatus {
-  DRAFT
-  RECOMMENDATION
-  VOTING
-  COMPLETED
-  CANCELLED
+  PLANNING            // 계획 단계 (선거 준비 중)
+  RECOMMEND           // 추천 기간 (후보 추천 진행 중)
+  CANDIDATE_CONFIRM   // 후보 확정 (추천 마감 후 후보 승인 단계)
+  VOTING              // 투표 기간 (투표 진행 중)
+  CLOSED              // 완료 (선거 종료)
+  CANCELLED           // 취소
 }
 
 enum ElectionRole {
@@ -79,7 +80,7 @@ model ElectionRound {
   id                      String         @id @default(uuid())
   name                    String
   description             String?
-  status                  ElectionStatus @default(DRAFT)
+  status                  ElectionStatus @default(PLANNING)
   recommendationStartDate DateTime       @map("recommendation_start_date")
   recommendationEndDate   DateTime       @map("recommendation_end_date")
   votingStartDate         DateTime       @map("voting_start_date")
