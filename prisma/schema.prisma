@@ -154,6 +154,7 @@ model Vote {
   voterId     String       @map("voter_id")
   candidateId String       @map("candidate_id")
   forRole     ElectionRole @map("for_role")
+  ballotHash  String       @map("ballot_hash") // 익명성 보장을 위한 해시값
   createdAt   DateTime     @default(now()) @map("created_at")
 
   // Relations
