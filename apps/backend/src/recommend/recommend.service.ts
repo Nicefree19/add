@@ -85,7 +85,7 @@ export class RecommendService {
       );
     }
 
-    // 3. 후보 사용자 존재 확인
+    // 3. 후보 사용자 존재 및 활성화 상태 확인
     const candidateUser = await this.prisma.user.findUnique({
       where: { id: dto.candidateUserId },
     });
@@ -94,6 +94,14 @@ export class RecommendService {
       throw new BusinessException(
         ErrorCode.USER_NOT_FOUND,
         '추천할 사용자를 찾을 수 없습니다.',
+      );
+    }
+
+    // 비활성화된 사용자는 추천할 수 없음
+    if (!candidateUser.isActive) {
+      throw new BusinessException(
+        ErrorCode.USER_INACTIVE,
+        '비활성화된 사용자는 추천할 수 없습니다.',
       );
     }
 

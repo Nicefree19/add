@@ -68,14 +68,82 @@
 
 ### 🟡 SHOULD (권장)
 
-- [ ] **이메일 서비스 설정**
+- [ ] **이메일 서비스 설정 (OTP 발송용)**
+
+  **이메일 서비스 선택 가이드:**
+
+  | 서비스 | 비용 | 발송 속도 | 신뢰성 | 설정 난이도 | 권장 상황 |
+  |--------|------|-----------|--------|-------------|-----------|
+  | **Gmail SMTP** | 무료 (일일 500통 제한) | 느림 (2-5초) | 중 | 쉬움 | 소규모 테스트, 초기 단계 |
+  | **SendGrid** | 무료 (일일 100통), 유료 $19.95/월~ | 빠름 (1초 이하) | 높음 | 중간 | 중소규모 프로덕션 |
+  | **AWS SES** | $0.10/1000통 | 매우 빠름 (0.5초) | 매우 높음 | 어려움 | 대규모 프로덕션, AWS 인프라 사용 시 |
+  | **Mailgun** | 무료 (월 5000통), 유료 $35/월~ | 빠름 (1초 이하) | 높음 | 중간 | EU/US 타겟 서비스 |
+  | **자체 SMTP** | 서버 비용 | 가변적 | 낮음-중 | 매우 어려움 | 완전한 제어 필요 시 (비권장) |
+
+  **Option 1: Gmail SMTP (테스트/소규모용)**
   ```env
-  # Email (OTP 발송용)
-  SMTP_HOST="smtp.gmail.com"
+  EMAIL_SERVICE=smtp
+  SMTP_HOST=smtp.gmail.com
   SMTP_PORT=587
-  SMTP_USER="noreply@yourdomain.com"
-  SMTP_PASSWORD="your-app-password"
-  SMTP_FROM="선거 시스템 <noreply@yourdomain.com>"
+  SMTP_SECURE=false
+  SMTP_USER=your-email@gmail.com
+  SMTP_PASSWORD=your-app-password  # Gmail 앱 비밀번호 필요
+  EMAIL_FROM="선거시스템 <noreply@yourdomain.com>"
+  ```
+
+  **Option 2: SendGrid (권장 - 중소규모)**
+  ```env
+  EMAIL_SERVICE=sendgrid
+  SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  EMAIL_FROM="선거시스템 <noreply@yourdomain.com>"
+  ```
+
+  **Option 3: AWS SES (권장 - 대규모)**
+  ```env
+  EMAIL_SERVICE=ses
+  AWS_REGION=ap-northeast-2
+  AWS_ACCESS_KEY_ID=AKIA........................
+  AWS_SECRET_ACCESS_KEY=........................................
+  EMAIL_FROM="선거시스템 <noreply@yourdomain.com>"
+  ```
+
+  **이메일 발송 테스트 및 검증:**
+
+  ```bash
+  # 1. OTP 요청하여 이메일 발송 테스트
+  curl -X POST http://localhost:3000/api/auth/request-otp \
+    -H "Content-Type: application/json" \
+    -d '{"email": "test@yourdomain.com"}'
+
+  # 2. 이메일 도착 시간 측정 (목표: 3초 이내)
+  # - OTP 요청 시각 기록
+  # - 이메일 수신 시각 확인
+  # - 지연 시간이 30초 이상이면 서비스 재검토
+
+  # 3. 스팸함 확인
+  # - 받은편지함에 도착했는지 확인
+  # - 스팸함에 들어갔다면 SPF/DKIM/DMARC 설정 필요
+
+  # 4. Bounce/반송 확인
+  # - 잘못된 이메일 주소로 테스트
+  # - Bounce 알림이 정상적으로 수신되는지 확인
+  ```
+
+  **SPF/DKIM/DMARC 설정 (스팸 방지):**
+
+  ```bash
+  # DNS TXT 레코드 추가 (도메인 관리 페이지에서)
+
+  # SPF (Sender Policy Framework)
+  TXT @ "v=spf1 include:_spf.google.com ~all"  # Gmail
+  TXT @ "v=spf1 include:sendgrid.net ~all"     # SendGrid
+  TXT @ "v=spf1 include:amazonses.com ~all"    # AWS SES
+
+  # DKIM (DomainKeys Identified Mail)
+  # SendGrid/SES에서 제공하는 DKIM 레코드 추가
+
+  # DMARC (Domain-based Message Authentication)
+  TXT _dmarc "v=DMARC1; p=quarantine; rua=mailto:dmarc@yourdomain.com"
   ```
 
 - [ ] **로그 레벨 설정**
@@ -452,9 +520,180 @@
 
 ### 🟡 SHOULD (권장)
 
-- [ ] **자동 재시작 설정**
-  - PM2 또는 systemd 서비스
-  - 서버 재부팅 시 자동 시작
+- [ ] **프로세스 관리 & 자동 재시작 설정 (PM2 또는 systemd)**
+
+  **Option 1: PM2 (권장 - Node.js 앱에 최적화)**
+
+  ```bash
+  # PM2 글로벌 설치
+  npm install -g pm2
+
+  # PM2 설정 파일 생성 (ecosystem.config.js)
+  pm2 init
+
+  # PM2 ecosystem 파일 예시 (apps/backend/ecosystem.config.js)
+  ```
+
+  ```javascript
+  module.exports = {
+    apps: [{
+      name: 'election-backend',
+      script: './dist/main.js',
+      instances: 2,  // CPU 코어 수에 맞춰 조정 (또는 'max')
+      exec_mode: 'cluster',
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000
+      },
+      env_production: {
+        NODE_ENV: 'production'
+      },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      max_restarts: 10,
+      min_uptime: '10s',
+      listen_timeout: 3000,
+      kill_timeout: 5000
+    }]
+  };
+  ```
+
+  ```bash
+  # 애플리케이션 시작
+  pm2 start ecosystem.config.js --env production
+
+  # 서버 재부팅 시 자동 시작 설정
+  pm2 startup systemd
+  pm2 save
+
+  # 상태 확인
+  pm2 status
+  pm2 logs
+  pm2 monit
+
+  # 재시작/중지
+  pm2 restart election-backend
+  pm2 stop election-backend
+  ```
+
+  **Option 2: systemd (시스템 레벨 관리)**
+
+  ```bash
+  # systemd 서비스 파일 생성
+  sudo nano /etc/systemd/system/election-backend.service
+  ```
+
+  ```ini
+  [Unit]
+  Description=Employee Election Backend API
+  Documentation=https://github.com/your-org/election-backend
+  After=network.target postgresql.service
+
+  [Service]
+  Type=simple
+  User=nodeuser
+  WorkingDirectory=/opt/election-backend
+  EnvironmentFile=/opt/election-backend/.env.production
+  ExecStart=/usr/bin/node dist/main.js
+  Restart=on-failure
+  RestartSec=10
+  StandardOutput=journal
+  StandardError=journal
+  SyslogIdentifier=election-backend
+
+  # 보안 강화
+  NoNewPrivileges=true
+  PrivateTmp=true
+
+  # 리소스 제한
+  LimitNOFILE=65536
+  MemoryLimit=2G
+
+  [Install]
+  WantedBy=multi-user.target
+  ```
+
+  ```bash
+  # 서비스 활성화 및 시작
+  sudo systemctl daemon-reload
+  sudo systemctl enable election-backend
+  sudo systemctl start election-backend
+
+  # 상태 확인
+  sudo systemctl status election-backend
+
+  # 로그 확인
+  sudo journalctl -u election-backend -f
+
+  # 재시작/중지
+  sudo systemctl restart election-backend
+  sudo systemctl stop election-backend
+  ```
+
+- [ ] **Health Check Endpoint 활성화 및 테스트**
+
+  백엔드에 구현된 Health Check 엔드포인트를 활용하여 모니터링 시스템 연동:
+
+  ```bash
+  # 기본 헬스 체크 (빠름, DB 체크 없음)
+  curl http://localhost:3000/api/health
+  # 응답: {"status":"ok","timestamp":"2025-11-17T...","uptime":3600,...}
+
+  # 상세 헬스 체크 (DB 연결, 환경 변수, 메모리 사용량)
+  curl http://localhost:3000/api/health/detailed
+  # 응답: {...,"database":{"connected":true,"responseTime":15},...}
+
+  # Readiness Probe (Kubernetes 또는 로드밸런서용)
+  curl http://localhost:3000/api/health/ready
+  # 응답: {"status":"ready","timestamp":"..."} 또는 {"status":"not_ready",...}
+
+  # Liveness Probe (Kubernetes용)
+  curl http://localhost:3000/api/health/live
+  # 응답: {"status":"ok","timestamp":"..."}
+  ```
+
+  **로드밸런서/모니터링 시스템 설정:**
+
+  - **Nginx Health Check 설정:**
+    ```nginx
+    upstream backend {
+      server localhost:3000 max_fails=3 fail_timeout=30s;
+
+      # Health check (nginx plus)
+      # health_check interval=10s uri=/api/health/ready;
+    }
+    ```
+
+  - **AWS ELB/ALB Target Group Health Check:**
+    - Protocol: HTTP
+    - Path: `/api/health/ready`
+    - Port: 3000
+    - Healthy threshold: 2
+    - Unhealthy threshold: 3
+    - Timeout: 5초
+    - Interval: 30초
+
+  - **Kubernetes Probes:**
+    ```yaml
+    livenessProbe:
+      httpGet:
+        path: /api/health/live
+        port: 3000
+      initialDelaySeconds: 15
+      periodSeconds: 20
+
+    readinessProbe:
+      httpGet:
+        path: /api/health/ready
+        port: 3000
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    ```
 
 - [ ] **로드 밸런싱**
   - 트래픽 증가 대비 (선택적)
@@ -691,25 +930,50 @@
 
 ### 🔧 사전 준비 (30분)
 
-#### 1. 관리자 계정 생성
+#### 1. 테스트 계정 생성 (관리자 1 + 감사 1 + 회원 10 + 비활성 1 = 총 12명)
+
+**Option 1: SQL 스크립트 사용 (권장)**
+
+준비된 SQL 스크립트를 사용하여 테스트 계정을 한번에 생성:
+
+```bash
+# PostgreSQL에 직접 실행
+cd apps/backend
+psql -U postgres -d election_dev -f scripts/create-test-accounts.sql
+
+# 또는 Docker 사용 시
+docker exec -i postgres psql -U postgres -d election_dev < scripts/create-test-accounts.sql
+```
+
+스크립트는 다음 계정을 생성합니다:
+- **ADMIN**: 1명 (admin@test.com)
+- **AUDITOR**: 1명 (auditor@test.com)
+- **MEMBER**: 10명 (hong.gildong@test.com ~ han.junseo@test.com)
+- **INACTIVE MEMBER**: 1명 (inactive.user@test.com)
+
+**Option 2: Prisma Studio 사용**
 
 ```bash
 # Prisma Studio 실행
 cd apps/backend
 npm run prisma:studio
+
+# 브라우저에서 http://localhost:5555 접속하여 수동으로 계정 생성
 ```
 
-**또는 직접 SQL:**
+**Option 3: 직접 SQL 실행 (일부만 생성하는 경우)**
 
 ```sql
+-- 최소 구성: 관리자 + 감사 + 회원 3명
+
 -- 1. 관리자 계정 (ADMIN)
 INSERT INTO users (id, employee_no, email, name, department, position, role, is_active, created_at, updated_at)
 VALUES (
   gen_random_uuid(),
   'ADMIN001',
   'admin@test.com',
-  '김관리',
-  'IT팀',
+  '시스템 관리자',
+  '경영지원팀',
   '팀장',
   'ADMIN',
   true,
@@ -721,42 +985,70 @@ VALUES (
 INSERT INTO users (id, employee_no, email, name, department, position, role, is_active, created_at, updated_at)
 VALUES (
   gen_random_uuid(),
-  'AUDIT001',
+  'AUD001',
   'auditor@test.com',
-  '이감사',
+  '김감사',
   '감사팀',
-  '감사',
+  '수석감사',
   'AUDITOR',
   true,
   NOW(),
   NOW()
 );
-```
 
-#### 2. 테스트 회원 계정 생성 (10명)
-
-```sql
--- 회원 10명 생성 (추천 및 투표용)
+-- 3. 회원 3명 (추천 및 투표 테스트용)
 INSERT INTO users (id, employee_no, email, name, department, position, role, is_active, created_at, updated_at)
 VALUES
-  (gen_random_uuid(), 'EMP001', 'user01@test.com', '홍길동', '개발팀', '대리', 'MEMBER', true, NOW(), NOW()),
-  (gen_random_uuid(), 'EMP002', 'user02@test.com', '김철수', '기획팀', '과장', 'MEMBER', true, NOW(), NOW()),
-  (gen_random_uuid(), 'EMP003', 'user03@test.com', '이영희', '디자인팀', '대리', 'MEMBER', true, NOW(), NOW()),
-  (gen_random_uuid(), 'EMP004', 'user04@test.com', '박민수', '개발팀', '부장', 'MEMBER', true, NOW(), NOW()),
-  (gen_random_uuid(), 'EMP005', 'user05@test.com', '정수진', '마케팅팀', '팀장', 'MEMBER', true, NOW(), NOW()),
-  (gen_random_uuid(), 'EMP006', 'user06@test.com', '최영수', '영업팀', '과장', 'MEMBER', true, NOW(), NOW()),
-  (gen_random_uuid(), 'EMP007', 'user07@test.com', '강민지', 'HR팀', '대리', 'MEMBER', true, NOW(), NOW()),
-  (gen_random_uuid(), 'EMP008', 'user08@test.com', '조현우', '개발팀', '사원', 'MEMBER', true, NOW(), NOW()),
-  (gen_random_uuid(), 'EMP009', 'user09@test.com', '윤서연', '기획팀', '대리', 'MEMBER', true, NOW(), NOW()),
-  (gen_random_uuid(), 'EMP010', 'user10@test.com', '임태희', '디자인팀', '팀장', 'MEMBER', true, NOW(), NOW());
+  (gen_random_uuid(), 'EMP001', 'hong.gildong@test.com', '홍길동', '개발팀', '대리', 'MEMBER', true, NOW(), NOW()),
+  (gen_random_uuid(), 'EMP002', 'lee.younghee@test.com', '이영희', '마케팅팀', '과장', 'MEMBER', true, NOW(), NOW()),
+  (gen_random_uuid(), 'EMP003', 'park.cheolsu@test.com', '박철수', '인사팀', '차장', 'MEMBER', true, NOW(), NOW());
 ```
 
-#### 3. 계정 생성 확인
+#### 2. 계정 생성 확인
 
 ```bash
-# 총 12명 확인 (관리자 1 + 감사 1 + 회원 10)
-curl http://localhost:3000/api/users
-# 또는 Prisma Studio에서 확인
+# 방법 1: API를 통해 확인 (ADMIN으로 로그인 후)
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:3000/api/users
+
+# 방법 2: 데이터베이스 직접 확인
+psql -U postgres -d election_dev -c "SELECT employee_no, email, name, role, is_active FROM users ORDER BY role, employee_no;"
+
+# 방법 3: Prisma Studio
+npm run prisma:studio
+# 브라우저에서 Users 테이블 확인
+
+# 예상 결과: 12명
+# - ADMIN: 1명
+# - AUDITOR: 1명
+# - MEMBER (active): 10명
+# - MEMBER (inactive): 1명
+```
+
+#### 3. 이메일 발송 테스트 (OTP 동작 확인)
+
+각 계정에 대해 OTP 요청을 테스트하여 이메일 서비스가 정상 작동하는지 확인:
+
+```bash
+# 관리자 계정 OTP 테스트
+curl -X POST http://localhost:3000/api/auth/request-otp \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@test.com"}'
+
+# 응답 확인
+# {"message": "OTP 코드가 이메일로 발송되었습니다."}
+
+# 백엔드 로그에서 OTP 코드 확인 (개발 환경)
+# [AuthService] OTP generated for user admin@test.com: 123456 (expires at ...)
+
+# 이메일 도착 시간 측정 (목표: 3초 이내)
+# - 요청 시각 기록
+# - 이메일 수신 시각 확인
+# - 30초 이상 지연되면 이메일 서비스 재검토
+
+# 스팸함 확인
+# - 받은편지함에 도착했는지 확인
+# - 스팸함에 있다면 SPF/DKIM/DMARC 설정 필요
 ```
 
 ---
