@@ -51,8 +51,14 @@ export class CandidateResponseDto {
 
   /**
    * Prisma Candidate 객체를 DTO로 변환
+   *
+   * @param candidate - Prisma Candidate 객체
+   * @param electionStatus - 선거 상태 (보안: voteCount는 CLOSED 상태에서만 공개)
    */
-  static fromPrisma(candidate: any): CandidateResponseDto {
+  static fromPrisma(candidate: any, electionStatus?: string): CandidateResponseDto {
+    // 보안: 투표 진행 중에는 voteCount를 0으로 숨김 (CLOSED 상태에서만 공개)
+    const shouldHideVoteCount = electionStatus && electionStatus !== 'CLOSED';
+
     return {
       id: candidate.id,
       userId: candidate.userId,
@@ -60,7 +66,7 @@ export class CandidateResponseDto {
       forRole: candidate.forRole as ElectionRole,
       statement: candidate.statement,
       status: candidate.status as CandidateStatus,
-      voteCount: candidate.voteCount,
+      voteCount: shouldHideVoteCount ? 0 : candidate.voteCount,
       createdAt: candidate.createdAt,
       updatedAt: candidate.updatedAt,
       user: candidate.user
@@ -79,8 +85,11 @@ export class CandidateResponseDto {
 
   /**
    * 여러 후보를 변환
+   *
+   * @param candidates - Prisma Candidate 객체 배열
+   * @param electionStatus - 선거 상태 (보안: voteCount는 CLOSED 상태에서만 공개)
    */
-  static fromPrismaMany(candidates: any[]): CandidateResponseDto[] {
-    return candidates.map((candidate) => CandidateResponseDto.fromPrisma(candidate));
+  static fromPrismaMany(candidates: any[], electionStatus?: string): CandidateResponseDto[] {
+    return candidates.map((candidate) => CandidateResponseDto.fromPrisma(candidate, electionStatus));
   }
 }

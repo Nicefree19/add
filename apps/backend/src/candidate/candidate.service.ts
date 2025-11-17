@@ -79,7 +79,8 @@ export class CandidateService {
       `Retrieved ${candidates.length} ACCEPTED candidates for election ${electionId}`,
     );
 
-    return CandidateResponseDto.fromPrismaMany(candidates);
+    // 보안: 선거 상태를 DTO에 전달하여 투표 진행 중 voteCount 숨김 처리
+    return CandidateResponseDto.fromPrismaMany(candidates, election.status);
   }
 
   /**
@@ -125,7 +126,8 @@ export class CandidateService {
       `Retrieved ${candidates.length} candidates (all statuses) for election ${electionId}`,
     );
 
-    return CandidateResponseDto.fromPrismaMany(candidates);
+    // 보안: 선거 상태를 DTO에 전달하여 투표 진행 중 voteCount 숨김 처리
+    return CandidateResponseDto.fromPrismaMany(candidates, election.status);
   }
 
   /**
@@ -226,7 +228,8 @@ export class CandidateService {
       // await this.notificationService.sendCandidateInvitation(candidate);
     });
 
-    return CandidateResponseDto.fromPrismaMany(updatedCandidates);
+    // 보안: 선거 상태를 DTO에 전달하여 투표 진행 중 voteCount 숨김 처리
+    return CandidateResponseDto.fromPrismaMany(updatedCandidates, election.status);
   }
 
   /**
@@ -291,6 +294,7 @@ export class CandidateService {
       data: updateData,
       include: {
         user: true,
+        election: true, // 선거 정보 포함 (상태 확인용)
         _count: {
           select: {
             recommendations: true,
@@ -310,7 +314,8 @@ export class CandidateService {
     );
     // await this.notificationService.sendCandidateResponse(updatedCandidate);
 
-    return CandidateResponseDto.fromPrisma(updatedCandidate);
+    // 보안: 선거 상태를 DTO에 전달하여 투표 진행 중 voteCount 숨김 처리
+    return CandidateResponseDto.fromPrisma(updatedCandidate, updatedCandidate.election.status);
   }
 
   /**

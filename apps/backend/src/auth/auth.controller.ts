@@ -1,4 +1,5 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import {
   RequestOtpDto,
@@ -61,6 +62,7 @@ export class AuthController {
    * }
    */
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 보안: 1분당 5회로 제한 (OTP 스팸 방지)
   @Post('request-otp')
   @HttpCode(HttpStatus.OK)
   async requestOtp(@Body() dto: RequestOtpDto) {
@@ -114,6 +116,7 @@ export class AuthController {
    * }
    */
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 보안: 1분당 10회로 제한 (브루트포스 공격 방지)
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   async verifyOtp(@Body() dto: VerifyOtpDto) {
@@ -158,6 +161,7 @@ export class AuthController {
    * }
    */
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 보안: 1분당 10회로 제한 (토큰 남용 방지)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(@Body() dto: RefreshTokenDto) {
