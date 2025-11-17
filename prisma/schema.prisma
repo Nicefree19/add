@@ -1,0 +1,252 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Enum Types
+// ============================================================================
+
+enum UserRole {
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+enum ElectionStatus {
+  DRAFT
+  RECOMMENDATION
+  VOTING
+  COMPLETED
+  CANCELLED
+}
+
+enum ElectionRole {
+  PRESIDENT
+  VICE_PRESIDENT
+  SECRETARY
+  TREASURER
+  AUDITOR
+}
+
+enum CandidateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+// ============================================================================
+// Models
+// ============================================================================
+
+model User {
+  id         String   @id @default(uuid())
+  employeeNo String   @unique @map("employee_no")
+  email      String   @unique
+  name       String
+  department String?
+  position   String?
+  role       UserRole @default(MEMBER)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  candidates           Candidate[]
+  recommendations      Recommendation[]
+  votes                Vote[]
+  notificationLogs     NotificationLog[]
+  accessLogs           AccessLog[]
+  otpTokens            OtpToken[]
+  transitionDocsFrom   TransitionDoc[]   @relation("TransitionDocFrom")
+  transitionDocsTo     TransitionDoc[]   @relation("TransitionDocTo")
+
+  @@index([employeeNo])
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model ElectionRound {
+  id                      String         @id @default(uuid())
+  name                    String
+  description             String?
+  status                  ElectionStatus @default(DRAFT)
+  recommendationStartDate DateTime       @map("recommendation_start_date")
+  recommendationEndDate   DateTime       @map("recommendation_end_date")
+  votingStartDate         DateTime       @map("voting_start_date")
+  votingEndDate           DateTime       @map("voting_end_date")
+  maxRecommendations      Int            @default(3) @map("max_recommendations")
+  isActive                Boolean        @default(true) @map("is_active")
+  createdAt               DateTime       @default(now()) @map("created_at")
+  updatedAt               DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  candidates       Candidate[]
+  recommendations  Recommendation[]
+  votes            Vote[]
+  transitionDocs   TransitionDoc[]
+
+  @@index([status])
+  @@index([votingStartDate, votingEndDate])
+  @@map("election_rounds")
+}
+
+model Recommendation {
+  id            String       @id @default(uuid())
+  electionId    String       @map("election_id")
+  recommenderId String       @map("recommender_id")
+  candidateId   String       @map("candidate_id")
+  forRole       ElectionRole @map("for_role")
+  comment       String?      @db.Text
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  election    ElectionRound @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  recommender User          @relation(fields: [recommenderId], references: [id], onDelete: Cascade)
+  candidate   Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  // Constraints: 한 사람은 같은 선거에서 같은 역할에 대해 한 번만 추천 가능
+  @@unique([electionId, recommenderId, forRole])
+  @@index([electionId])
+  @@index([candidateId])
+  @@map("recommendations")
+}
+
+model Candidate {
+  id        String          @id @default(uuid())
+  userId    String          @map("user_id")
+  electionId String         @map("election_id")
+  forRole   ElectionRole    @map("for_role")
+  statement String?         @db.Text
+  status    CandidateStatus @default(PENDING)
+  voteCount Int             @default(0) @map("vote_count")
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  election        ElectionRound    @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  recommendations Recommendation[]
+  votes           Vote[]
+
+  // 한 사람은 같은 선거에서 같은 역할에 한 번만 출마 가능
+  @@unique([userId, electionId, forRole])
+  @@index([electionId])
+  @@index([userId])
+  @@index([status])
+  @@map("candidates")
+}
+
+model Vote {
+  id          String       @id @default(uuid())
+  electionId  String       @map("election_id")
+  voterId     String       @map("voter_id")
+  candidateId String       @map("candidate_id")
+  forRole     ElectionRole @map("for_role")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  election  ElectionRound @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  voter     User          @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  candidate Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  // Constraints: 한 사람은 같은 선거에서 같은 역할에 대해 한 번만 투표 가능
+  @@unique([electionId, voterId, forRole])
+  @@index([electionId])
+  @@index([candidateId])
+  @@map("votes")
+}
+
+model NotificationLog {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  message   String    @db.Text
+  isRead    Boolean   @default(false) @map("is_read")
+  sentAt    DateTime  @default(now()) @map("sent_at")
+  readAt    DateTime? @map("read_at")
+  metadata  String?   @db.Json
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([sentAt])
+  @@map("notification_logs")
+}
+
+model AccessLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  ipAddress  String   @map("ip_address")
+  userAgent  String   @map("user_agent") @db.Text
+  action     String
+  resource   String?
+  metadata   String?  @db.Json
+  statusCode Int?     @map("status_code")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("access_logs")
+}
+
+model TransitionDoc {
+  id         String       @id @default(uuid())
+  electionId String       @map("election_id")
+  fromUserId String       @map("from_user_id")
+  toUserId   String       @map("to_user_id")
+  forRole    ElectionRole @map("for_role")
+  title      String
+  content    String       @db.Text
+  attachments String?     @db.Json
+  isCompleted Boolean     @default(false) @map("is_completed")
+  completedAt DateTime?   @map("completed_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  election ElectionRound @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  fromUser User          @relation("TransitionDocFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User          @relation("TransitionDocTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([electionId])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@map("transition_docs")
+}
+
+model OtpToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  purpose   String   @default("login")
+  expiresAt DateTime @map("expires_at")
+  isUsed    Boolean  @default(false) @map("is_used")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("otp_tokens")
+}
