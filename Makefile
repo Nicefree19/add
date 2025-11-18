@@ -97,9 +97,18 @@ db-studio: ## Prisma Studio 실행
 	@echo "🎨 Prisma Studio 실행..."
 	cd apps/backend && npx prisma studio
 
-db-seed: ## 테스트 계정 생성
-	@echo "🌱 테스트 계정 생성..."
-	psql -U postgres -d election_dev -f apps/backend/scripts/create-test-accounts.sql
+db-seed: ## 초기 데이터 Seed (계좌 + 임기)
+	@echo "🌱 초기 데이터 Seed..."
+	cd apps/backend && npm run prisma:seed
+
+db-seed-finance: ## 거래내역 마이그레이션 (1,320건)
+	@echo "💰 거래내역 마이그레이션..."
+	cd apps/backend && npm run prisma:migrate-finance
+
+db-reset: ## 데이터베이스 리셋 (주의!)
+	@echo "⚠️  데이터베이스를 초기화합니다!"
+	@read -p "계속하시겠습니까? [y/N] " confirm && [ $$confirm = y ] || exit 1
+	cd apps/backend && npx prisma migrate reset --force
 
 # ========================================
 # Docker
