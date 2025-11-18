@@ -22,6 +22,7 @@ import { getAccounts, getSummary, Account, SummaryResponse } from '@/lib/api/fin
 import { getErrorMessage } from '@/lib/api/client';
 import { TransactionTable } from './TransactionTable';
 import { FinanceChart } from './FinanceChart';
+import { CategoryChart } from './CategoryChart';
 
 export function FinanceTab() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -211,9 +212,15 @@ export function FinanceTab() {
       )}
 
       {/* 차트 */}
-      {summary && summary.chartData.length > 0 && (
-        <FinanceChart chartData={summary.chartData} />
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {summary && summary.chartData.length > 0 && (
+          <FinanceChart chartData={summary.chartData} />
+        )}
+
+        {summary && summary.byCategory && (
+          <CategoryChart categoryData={summary.byCategory} />
+        )}
+      </div>
 
       {/* 거래내역 테이블 */}
       <TransactionTable accounts={accounts} />
