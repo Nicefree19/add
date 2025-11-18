@@ -28,6 +28,7 @@ import {
   ArrowUpDown,
   TrendingUp,
   TrendingDown,
+  Download,
 } from 'lucide-react';
 import {
   getTransactions,
@@ -61,6 +62,8 @@ export function TransactionTable({ accounts }: TransactionTableProps) {
   });
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
     loadTransactions();
@@ -105,6 +108,26 @@ export function TransactionTable({ accounts }: TransactionTableProps) {
     }));
   };
 
+  const handleDateFilter = () => {
+    setFilters((prev) => ({
+      ...prev,
+      from: dateFrom || undefined,
+      to: dateTo || undefined,
+      page: 1,
+    }));
+  };
+
+  const clearDateFilter = () => {
+    setDateFrom('');
+    setDateTo('');
+    setFilters((prev) => ({
+      ...prev,
+      from: undefined,
+      to: undefined,
+      page: 1,
+    }));
+  };
+
   const formatCurrency = (amount: string) => {
     return new Intl.NumberFormat('ko-KR', {
       style: 'currency',
@@ -120,33 +143,79 @@ export function TransactionTable({ accounts }: TransactionTableProps) {
     });
   };
 
+  const handleExportCSV = () => {
+    if (transactions.length === 0) {
+      alert('다운로드할 거래내역이 없습니다.');
+      return;
+    }
+
+    // CSV 헤더
+    const headers = ['날짜', '유형', '계좌', '카테고리', '설명', '금액'];
+
+    // CSV 데이터
+    const csvData = transactions.map((tx) => [
+      formatDate(tx.date),
+      tx.type === 'INCOME' ? '입금' : '출금',
+      tx.account.name,
+      tx.category,
+      `"${tx.description.replace(/"/g, '""')}"`, // CSV escape
+      tx.type === 'INCOME' ? Number(tx.amount) : -Number(tx.amount),
+    ]);
+
+    // CSV 생성
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map((row) => row.join(',')),
+    ].join('\n');
+
+    // BOM 추가 (엑셀에서 한글 깨짐 방지)
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `거래내역_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>거래내역</CardTitle>
-        <CardDescription>
-          전체 거래 내역을 조회하고 필터링할 수 있습니다.
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <div>
+          <CardTitle>거래내역</CardTitle>
+          <CardDescription>
+            전체 거래 내역을 조회하고 필터링할 수 있습니다.
+          </CardDescription>
+        </div>
+        <Button onClick={handleExportCSV} variant="outline" size="sm">
+          <Download className="h-4 w-4 mr-2" />
+          CSV 다운로드
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 필터 영역 */}
-        <div className="grid grid-cols-5 gap-3">
-          {/* 검색 */}
-          <div className="col-span-2 flex gap-2">
-            <Input
-              placeholder="거래 설명 검색..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch();
-                }
-              }}
-            />
-            <Button onClick={handleSearch} size="icon">
-              <Search className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="space-y-3">
+          <div className="grid grid-cols-5 gap-3">
+            {/* 검색 */}
+            <div className="col-span-2 flex gap-2">
+              <Input
+                placeholder="거래 설명 검색..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
+              />
+              <Button onClick={handleSearch} size="icon">
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
 
           {/* 거래 유형 */}
           <Select
@@ -207,6 +276,35 @@ export function TransactionTable({ accounts }: TransactionTableProps) {
               <SelectItem value="amount-asc">금액 (낮은순)</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* 날짜 범위 필터 */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-600">기간:</label>
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-40"
+            />
+            <span className="text-gray-500">~</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-40"
+            />
+            <Button onClick={handleDateFilter} size="sm">
+              적용
+            </Button>
+            {(dateFrom || dateTo) && (
+              <Button onClick={clearDateFilter} variant="outline" size="sm">
+                초기화
+              </Button>
+            )}
+          </div>
+        </div>
         </div>
 
         {/* 테이블 */}
