@@ -1,0 +1,28 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "name": "election-frontend",
+  "buildCommand": "cd apps/frontend && npm install && npm run build",
+  "devCommand": "cd apps/frontend && npm run dev",
+  "installCommand": "cd apps/frontend && npm install",
+  "outputDirectory": "apps/frontend/.next",
+  "framework": "nextjs",
+  "regions": ["sin1"],
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "claude/**": true
+    }
+  },
+  "env": {
+    "NEXT_PUBLIC_API_URL": {
+      "description": "Backend API URL",
+      "value": "https://election-backend.onrender.com"
+    }
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_API_URL": "@next_public_api_url"
+    }
+  }
+}

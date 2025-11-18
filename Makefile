@@ -111,6 +111,45 @@ db-reset: ## 데이터베이스 리셋 (주의!)
 	cd apps/backend && npx prisma migrate reset --force
 
 # ========================================
+# Deployment
+# ========================================
+
+deploy-check: ## 배포 전 체크리스트 확인
+	@echo "📋 배포 전 체크리스트..."
+	@echo ""
+	@echo "✅ 1. 환경 변수 설정 확인"
+	@echo "   - Render: DATABASE_URL, JWT_SECRET, BALLOT_SECRET_SALT, CORS_ORIGIN"
+	@echo "   - Vercel: NEXT_PUBLIC_API_URL"
+	@echo ""
+	@echo "✅ 2. 빌드 테스트"
+	@echo "   - Backend: cd apps/backend && npm run build"
+	@echo "   - Frontend: cd apps/frontend && npm run build"
+	@echo ""
+	@echo "✅ 3. 데이터베이스 마이그레이션"
+	@echo "   - Render Shell: cd apps/backend && npx prisma migrate deploy"
+	@echo ""
+	@echo "✅ 4. 초기 데이터 Seed"
+	@echo "   - Render Shell: npm run prisma:seed"
+	@echo "   - Render Shell: npm run prisma:migrate-finance"
+	@echo ""
+	@echo "📖 상세 가이드: DEPLOY_NOW.md 참고"
+
+deploy-docs: ## 배포 가이드 열기
+	@echo "📖 배포 가이드 열기..."
+	@cat DEPLOY_NOW.md
+
+generate-secrets: ## 프로덕션용 시크릿 키 생성
+	@echo "🔑 프로덕션용 시크릿 키 생성..."
+	@echo ""
+	@echo "JWT_SECRET:"
+	@openssl rand -base64 64
+	@echo ""
+	@echo "BALLOT_SECRET_SALT:"
+	@openssl rand -base64 64
+	@echo ""
+	@echo "⚠️  이 키들을 Render 환경 변수에 추가하세요!"
+
+# ========================================
 # Docker
 # ========================================
 docker-up: ## Docker Compose 실행
