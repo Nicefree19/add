@@ -24,6 +24,7 @@ services:
     runtime: node
     region: singapore
     plan: free
+    branch: claude/integrate-alumni-management-013hFeLMtj7GCrq5UeqpHTSt
     buildCommand: cd apps/backend && npm install && npx prisma generate && npm run build
     startCommand: cd apps/backend && npx prisma migrate deploy && npm run start:prod
     healthCheckPath: /api/health
@@ -43,8 +44,6 @@ services:
       - key: CORS_ORIGIN
         sync: false
     autoDeploy: true
-    rootDir: .
-    dockerfilePath: ./apps/backend/Dockerfile
 
   # ========================================
   # Static Site (Optional - for docs/landing)
