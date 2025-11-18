@@ -106,3 +106,13 @@ export async function getResultDetail(
   );
   return response.data.data!;
 }
+
+/**
+ * 인수인계 문서 목록 조회
+ */
+export async function getTransitionDocs(electionId: string): Promise<any> {
+  const response = await apiClient.get<ApiResponse<any>>(
+    `/elections/${electionId}/transition-docs`
+  );
+  return response.data.data!;
+}
