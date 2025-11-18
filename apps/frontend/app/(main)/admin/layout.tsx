@@ -9,7 +9,8 @@ import {
   Vote,
   Users,
   FileText,
-  Settings
+  Settings,
+  Wallet
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       title: '선거 관리',
       href: '/admin/elections',
       icon: Vote,
+    },
+    {
+      title: '사우회 운영',
+      href: '/admin/management',
+      icon: Wallet,
     },
     {
       title: '사용자 관리',
