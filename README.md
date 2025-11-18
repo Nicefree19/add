@@ -2,6 +2,18 @@
 
 엑셀 파일을 기반으로 한 인터랙티브 재무 관리 및 회비 추적 시스템입니다.
 
+## 🚀 빠른 배포
+
+### 원클릭 배포
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Nicefree19/add)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Nicefree19/add&root-directory=apps/frontend)
+
+**배포 가이드:**
+- ⚡ [빠른 배포 (5분)](./DEPLOY_QUICK.md) - 원클릭 배포
+- 📖 [상세 배포 가이드](./DEPLOY_NOW.md) - 단계별 설명
+- 💻 [로컬 실행 가이드](./QUICK_START_GUIDE.md) - 개발 환경 설정
+
 ## 주요 기능
 
 ### 💼 재무 관리
