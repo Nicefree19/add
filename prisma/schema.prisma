@@ -37,6 +37,18 @@ enum ElectionRole {
   AUDITOR
 }
 
+enum BankCode {
+  KAKAO_BANK
+  SAFE_BOX
+  SHINHAN_BANK
+  CASH_ON_HAND
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
 enum CandidateStatus {
   PENDING     // 추천으로 생성됨 (아직 초대 전)
   INVITED     // 관리자가 후보로 초대함
@@ -70,6 +82,7 @@ model User {
   otpTokens            OtpToken[]
   transitionDocsFrom   TransitionDoc[]   @relation("TransitionDocFrom")
   transitionDocsTo     TransitionDoc[]   @relation("TransitionDocTo")
+  transactions         Transaction[]
 
   @@index([employeeNo])
   @@index([email])
@@ -96,6 +109,7 @@ model ElectionRound {
   recommendations  Recommendation[]
   votes            Vote[]
   transitionDocs   TransitionDoc[]
+  term             Term?
 
   @@index([status])
   @@index([votingStartDate, votingEndDate])
@@ -252,4 +266,82 @@ model OtpToken {
   @@index([token])
   @@index([expiresAt])
   @@map("otp_tokens")
+}
+
+// ============================================================================
+// Finance Management Models
+// ============================================================================
+
+model Term {
+  id          String   @id @default(uuid())
+  name        String   // "2025년 1기", "2025년 2기" 등
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  description String?  @db.Text
+  isActive    Boolean  @default(false) @map("is_active")
+
+  // 임기별 임원진 (ElectionRound와 1:1 관계)
+  electionId  String?  @unique @map("election_id")
+  election    ElectionRound? @relation(fields: [electionId], references: [id])
+
+  // Relations
+  transactions Transaction[]
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([startDate, endDate])
+  @@index([isActive])
+  @@map("terms")
+}
+
+model Account {
+  id            String    @id @default(uuid())
+  name          String    // "카카오뱅크 사우회", "세이프박스", "현금" 등
+  accountNumber String?   @map("account_number") // 현금 계정은 null 가능
+  bankCode      BankCode  @map("bank_code")
+  balance       Decimal   @default(0) @db.Decimal(15, 2)
+  isActive      Boolean   @default(true) @map("is_active")
+
+  // Relations
+  transactions  Transaction[]
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([bankCode])
+  @@index([isActive])
+  @@map("accounts")
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  accountId   String          @map("account_id")
+  account     Account         @relation(fields: [accountId], references: [id])
+
+  date        DateTime
+  amount      Decimal         @db.Decimal(15, 2) // 양수로 하고 type(INCOME/EXPENSE)로 구분
+  type        TransactionType
+  category    String
+  description String          @db.Text
+
+  // 특정 임기와 연계 (선택 사항)
+  termId      String?         @map("term_id")
+  term        Term?           @relation(fields: [termId], references: [id])
+
+  // 누가 입력했는지 (감사 로그용)
+  createdById String?         @map("created_by_id")
+  createdBy   User?           @relation(fields: [createdById], references: [id])
+
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  deletedAt   DateTime?       @map("deleted_at") // 소프트 삭제용
+
+  @@index([accountId])
+  @@index([date])
+  @@index([type])
+  @@index([termId])
+  @@index([createdById])
+  @@index([deletedAt])
+  @@map("transactions")
 }
